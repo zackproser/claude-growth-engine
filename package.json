@@ -9,9 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.71",
+    "@apidevtools/swagger-parser": "^12.1.0",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "resend": "^6.9.3",
+    "swagger-parser": "^10.0.3"
   },
   "devDependencies": {
     "@types/node": "^20",
