@@ -16,6 +16,7 @@ export default function DemoPage() {
   const [selectedEndpoint, setSelectedEndpoint] = useState<number>(0);
   const [chatMessages, setChatMessages] = useState<Array<{ from: string; text: string }>>([]);
   const [chatInput, setChatInput] = useState('');
+  const [selectedLang, setSelectedLang] = useState('curl');
   const [startTime] = useState(Date.now());
 
   useEffect(() => {
@@ -235,10 +236,11 @@ export default function DemoPage() {
         <section className="py-14 border-b border-slate-200">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Make your first API call</h2>
-            <p className="text-slate-500">Click an endpoint to see how it works for {company.name}</p>
+            <p className="text-slate-500">Click an endpoint, pick your language — we&apos;ll track your preference</p>
           </div>
 
           <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl">
+            {/* Endpoint tabs */}
             <div className="flex overflow-x-auto border-b border-slate-700/50 bg-slate-800/50">
               {relevantEndpoints.map((ep, i) => (
                 <button key={i}
@@ -254,34 +256,57 @@ export default function DemoPage() {
                 </button>
               ))}
             </div>
+
             <div className="p-6">
-              {relevantEndpoints[selectedEndpoint] && (
-                <div>
-                  <h3 className="text-white font-semibold text-lg mb-1">
-                    {relevantEndpoints[selectedEndpoint].summary || relevantEndpoints[selectedEndpoint].path}
-                  </h3>
-                  {relevantEndpoints[selectedEndpoint].description && (
-                    <p className="text-slate-400 text-sm mb-5">{relevantEndpoints[selectedEndpoint].description}</p>
-                  )}
-                  <div className="bg-slate-800 rounded-xl p-5 font-mono text-sm border border-slate-700">
-                    <p className="text-slate-500 mb-2"># Try it now:</p>
-                    <p className="text-green-400">
-                      curl -X {relevantEndpoints[selectedEndpoint].method}{' '}
-                      <span className="text-white">{spec.baseUrl || 'https://api.example.com'}{relevantEndpoints[selectedEndpoint].path}</span> \
-                    </p>
-                    <p className="text-white pl-4">-H &quot;Authorization: Bearer YOUR_API_KEY&quot; \</p>
-                    <p className="text-white pl-4">-H &quot;Content-Type: application/json&quot;</p>
+              {relevantEndpoints[selectedEndpoint] && (() => {
+                const ep = relevantEndpoints[selectedEndpoint];
+                const base = spec.baseUrl || 'https://api.example.com';
+                const url = `${base}${ep.path}`;
+                const langs: Record<string, { label: string; icon: string; code: string }> = {
+                  curl: { label: 'cURL', icon: '⌘', code: `curl -X ${ep.method} "${url}" \\\n  -H "Authorization: Bearer YOUR_API_KEY" \\\n  -H "Content-Type: application/json"` },
+                  python: { label: 'Python', icon: '🐍', code: `import requests\n\nresponse = requests.${ep.method.toLowerCase()}(\n    "${url}",\n    headers={\n        "Authorization": "Bearer YOUR_API_KEY",\n        "Content-Type": "application/json"\n    }\n)\nprint(response.json())` },
+                  node: { label: 'Node.js', icon: '🟢', code: `const response = await fetch("${url}", {\n  method: "${ep.method}",\n  headers: {\n    "Authorization": "Bearer YOUR_API_KEY",\n    "Content-Type": "application/json"\n  }\n});\nconst data = await response.json();` },
+                  go: { label: 'Go', icon: '🔵', code: `req, _ := http.NewRequest("${ep.method}", "${url}", nil)\nreq.Header.Set("Authorization", "Bearer YOUR_API_KEY")\nreq.Header.Set("Content-Type", "application/json")\nresp, _ := http.DefaultClient.Do(req)` },
+                  ruby: { label: 'Ruby', icon: '💎', code: `require 'net/http'\nrequire 'json'\n\nuri = URI("${url}")\nreq = Net::HTTP::${ep.method === 'GET' ? 'Get' : ep.method === 'POST' ? 'Post' : ep.method === 'PUT' ? 'Put' : ep.method === 'DELETE' ? 'Delete' : 'Get'}.new(uri)\nreq["Authorization"] = "Bearer YOUR_API_KEY"\nres = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }\nputs JSON.parse(res.body)` },
+                };
+
+                return (
+                  <div>
+                    <h3 className="text-white font-semibold text-lg mb-1">
+                      {ep.summary || ep.path}
+                    </h3>
+                    {ep.description && (
+                      <p className="text-slate-400 text-sm mb-4">{ep.description}</p>
+                    )}
+
+                    {/* Language tabs */}
+                    <div className="flex gap-1 mb-3">
+                      {Object.entries(langs).map(([key, lang]) => (
+                        <button key={key}
+                          onClick={() => { setSelectedLang(key); trackEvent('lang_selected', { language: key, endpoint: ep.path }); }}
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                            selectedLang === key ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                          }`}>
+                          <span className="mr-1">{lang.icon}</span>{lang.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="bg-slate-800 rounded-xl p-5 font-mono text-sm border border-slate-700 overflow-x-auto">
+                      <pre className="text-green-400 whitespace-pre">{langs[selectedLang].code}</pre>
+                    </div>
+
+                    <div className="mt-4 flex gap-3">
+                      <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Get API Key →
+                      </button>
+                      <button className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        View Full Docs
+                      </button>
+                    </div>
                   </div>
-                  <div className="mt-4 flex gap-3">
-                    <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                      Get API Key →
-                    </button>
-                    <button className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                      View Full Docs
-                    </button>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         </section>
