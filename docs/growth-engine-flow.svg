@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="420">
+      <stop offset="0%" stop-color="#191A23"/>
+      <stop offset="100%" stop-color="#1A1A2E"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2A2B3D"/>
+      <stop offset="100%" stop-color="#232436"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D97757"/>
+      <stop offset="100%" stop-color="#E8C547"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="420" rx="12" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="480" y="40" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" letter-spacing="0.5">Claude Growth Engine</text>
+  <text x="480" y="60" text-anchor="middle" fill="#D97757" font-family="system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="3">POWERED BY CLAUDE AGENT SDK</text>
+
+  <!-- === Step 1: Upload Spec === -->
+  <g filter="url(#shadow)">
+    <rect x="28" y="82" width="195" height="230" rx="10" fill="url(#card)" stroke="#3A3B4D" stroke-width="1"/>
+    <rect x="28" y="82" width="195" height="4" rx="2" fill="#D97757"/>
+  </g>
+  <text x="126" y="120" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="32">📄</text>
+  <text x="126" y="150" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="16" font-weight="700">Upload Spec</text>
+  <text x="126" y="175" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">Paste or upload your</text>
+  <text x="126" y="192" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">OpenAPI spec</text>
+  <rect x="48" y="210" width="155" height="34" rx="7" fill="#1E1F30" stroke="#3A3B4D" stroke-width="1"/>
+  <text x="126" y="232" text-anchor="middle" fill="#7A7B90" font-family="monospace" font-size="11">{ "openapi": "3.1" }</text>
+  <rect x="48" y="252" width="155" height="34" rx="7" fill="#1E1F30" stroke="#3A3B4D" stroke-width="1"/>
+  <text x="126" y="274" text-anchor="middle" fill="#7A7B90" font-family="monospace" font-size="11">paths, schemas...</text>
+
+  <!-- Arrow 1→2 -->
+  <g filter="url(#glow)">
+    <line x1="230" y1="197" x2="262" y2="197" stroke="#D97757" stroke-width="2.5" stroke-linecap="round"/>
+    <polygon points="262,191 275,197 262,203" fill="#D97757"/>
+  </g>
+
+  <!-- === Step 2: Pick Target === -->
+  <g filter="url(#shadow)">
+    <rect x="282" y="82" width="195" height="230" rx="10" fill="url(#card)" stroke="#3A3B4D" stroke-width="1"/>
+    <rect x="282" y="82" width="195" height="4" rx="2" fill="#D97757"/>
+  </g>
+  <text x="380" y="120" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="32">🎯</text>
+  <text x="380" y="150" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="16" font-weight="700">Pick Target</text>
+  <text x="380" y="175" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">Enter a company URL</text>
+  <text x="380" y="192" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">to target</text>
+  <rect x="302" y="210" width="155" height="34" rx="7" fill="#1E1F30" stroke="#3A3B4D" stroke-width="1"/>
+  <text x="380" y="232" text-anchor="middle" fill="#7A7B90" font-family="monospace" font-size="11">https://acme.com</text>
+  <text x="380" y="266" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">Claude scrapes their</text>
+  <text x="380" y="283" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">site &amp; maps pain points</text>
+
+  <!-- Arrow 2→3 -->
+  <g filter="url(#glow)">
+    <line x1="484" y1="197" x2="516" y2="197" stroke="#D97757" stroke-width="2.5" stroke-linecap="round"/>
+    <polygon points="516,191 529,197 516,203" fill="#D97757"/>
+  </g>
+
+  <!-- === Step 3: Claude Agent (hero card) === -->
+  <g filter="url(#shadow)">
+    <rect x="536" y="78" width="195" height="238" rx="10" fill="url(#card)" stroke="#D97757" stroke-width="1.5"/>
+    <rect x="536" y="78" width="195" height="5" rx="2" fill="url(#accent)"/>
+  </g>
+  <!-- Claude sparkle -->
+  <g transform="translate(634, 110)">
+    <circle cx="0" cy="0" r="18" fill="#D97757" opacity="0.15"/>
+    <path d="M0-12 C2-5 5-2 12 0 C5 2 2 5 0 12 C-2 5 -5 2 -12 0 C-5-2 -2-5 0-12Z" fill="#D97757"/>
+  </g>
+  <text x="634" y="148" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="16" font-weight="700">Claude Agent</text>
+  <text x="634" y="167" text-anchor="middle" fill="#D97757" font-family="system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5">AGENT SDK</text>
+  <text x="634" y="194" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">Analyzes your spec +</text>
+  <text x="634" y="211" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">target company</text>
+  <text x="634" y="236" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">Generates personalized</text>
+  <text x="634" y="253" text-anchor="middle" fill="#9A9BB0" font-family="system-ui, sans-serif" font-size="12">outreach artifacts</text>
+  <rect x="566" y="270" width="136" height="30" rx="15" fill="#D97757"/>
+  <text x="634" y="290" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="12" font-weight="700">Every call → API ⚡</text>
+
+  <!-- Arrow 3→4 -->
+  <g filter="url(#glow)">
+    <line x1="738" y1="197" x2="770" y2="197" stroke="#D97757" stroke-width="2.5" stroke-linecap="round"/>
+    <polygon points="770,191 783,197 770,203" fill="#D97757"/>
+  </g>
+
+  <!-- === Step 4: Growth Suite === -->
+  <g filter="url(#shadow)">
+    <rect x="790" y="82" width="145" height="230" rx="10" fill="url(#card)" stroke="#3A3B4D" stroke-width="1"/>
+    <rect x="790" y="82" width="145" height="4" rx="2" fill="url(#accent)"/>
+  </g>
+  <text x="863" y="120" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="32">🚀</text>
+  <text x="863" y="150" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="16" font-weight="700">Growth Suite</text>
+
+  <!-- Output items with labels -->
+  <rect x="805" y="168" width="115" height="28" rx="6" fill="#D97757" opacity="0.15"/>
+  <text x="863" y="187" text-anchor="middle" fill="#D97757" font-family="system-ui, sans-serif" font-size="12" font-weight="600">📧 Cold Email</text>
+
+  <rect x="805" y="202" width="115" height="28" rx="6" fill="#E8C547" opacity="0.15"/>
+  <text x="863" y="221" text-anchor="middle" fill="#E8C547" font-family="system-ui, sans-serif" font-size="12" font-weight="600">🎯 Demo Page</text>
+
+  <rect x="805" y="236" width="115" height="28" rx="6" fill="#D97757" opacity="0.15"/>
+  <text x="863" y="255" text-anchor="middle" fill="#D97757" font-family="system-ui, sans-serif" font-size="12" font-weight="600">📊 Value Prop</text>
+
+  <rect x="805" y="270" width="115" height="28" rx="6" fill="#E8C547" opacity="0.15"/>
+  <text x="863" y="289" text-anchor="middle" fill="#E8C547" font-family="system-ui, sans-serif" font-size="12" font-weight="600">📈 Tracking</text>
+
+  <!-- Bottom bar -->
+  <rect x="28" y="340" width="907" height="58" rx="8" fill="#232436" stroke="#3A3B4D" stroke-width="1"/>
+  <text x="482" y="365" text-anchor="middle" fill="#FAFAF9" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Paste your OpenAPI spec → Pick a target → Claude generates your entire outreach suite</text>
+  <text x="482" y="385" text-anchor="middle" fill="#D97757" font-family="system-ui, sans-serif" font-size="13" font-weight="600">Time to first outreach: under 3 minutes</text>
+</svg>
