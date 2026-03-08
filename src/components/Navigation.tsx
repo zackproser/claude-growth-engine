@@ -1,22 +1,16 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Navigation() {
   return (
-    <nav className="bg-dark border-b border-neutral-700">
+    <nav className="bg-dark-alt/80 backdrop-blur-md border-b border-neutral-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-dark font-bold text-lg">C</span>
-              </div>
-              <span className="text-xl font-semibold text-text-light">Growth Engine</span>
-            </Link>
-          </div>
-          
-          <div className="flex items-center space-x-6">
-            <span className="text-sm text-neutral-400">Powered by Claude</span>
-          </div>
+        <div className="flex justify-between items-center h-14">
+          <Link href="/" className="flex items-center space-x-2.5">
+            <Image src="/claude-logo.svg" alt="Claude" width={24} height={24} />
+            <span className="text-lg font-semibold text-text-light tracking-tight">Growth Engine</span>
+          </Link>
+          <Image src="/powered-by-claude.svg" alt="Powered by Claude Agent SDK" width={200} height={28} />
         </div>
       </div>
     </nav>
