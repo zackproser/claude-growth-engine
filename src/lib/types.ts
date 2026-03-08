@@ -46,7 +46,18 @@ export interface AnalysisResult {
 export interface TrackingEvent {
   resultId: string;
   companyUrl: string;
-  eventType: 'page_view' | 'email_sent' | 'email_opened' | 'link_clicked' | 'demo_viewed' | 'feedback_submitted';
+  eventType: 'page_view' | 'email_sent' | 'email_opened' | 'link_clicked' | 'demo_viewed' | 'feedback_submitted' | 'api_playground' | 'time_on_page';
   metadata?: Record<string, string>;
   timestamp: string;
+}
+
+export interface LeadScore {
+  companyName: string;
+  companyUrl: string;
+  score: number; // 0-100
+  temperature: 'hot' | 'warm' | 'cold';
+  signals: string[];
+  nextAction: string;
+  nextActionDate: string;
+  lastEngagement: string;
 }

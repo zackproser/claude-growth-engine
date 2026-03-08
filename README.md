@@ -19,149 +19,72 @@
 
 <img src="img/growth-engine-flow.svg" alt="Growth Engine Flow" width="720" />
 
-<br />
-
-**Paste your OpenAPI spec. Pick a target company. Get a personalized outreach suite — instantly.**
-
-[Quick Start](#-quick-start) • [How It Works](#-how-it-works) • [Demo Pages](#-personalized-demo-pages) • [Architecture](#-architecture)
-
 </div>
 
 ---
 
-## ⚡ For Startup Founders
+## What It Does
 
-You built an API. Now you need to get it in front of the right people — fast. Growth Engine turns your OpenAPI spec into a full outreach machine:
+Paste your OpenAPI spec. Pick a target company. Claude does the rest.
 
-1. **Upload your spec** — JSON or YAML, Claude parses every endpoint
-2. **Pick a target company** — just drop their URL
-3. **Claude does the research** — scrapes their site, finds their logo, reads their pain points, maps how your API solves them
-4. **Get a complete outreach suite** — personalized cold email, a branded demo page, a tailored value prop
-5. **Track everything** — engagement, page visits, and feedback logged to Google Sheets
+1. **Parses your API** — validates with swagger-parser, extracts every endpoint and its capabilities
+2. **Researches the target** — agent browses their site, finds their logo, reads their pain points, maps their tech stack
+3. **Generates a complete outreach suite:**
+   - 📧 **Cold email** — under 4 lines, mapped to their specific pain points
+   - 🎯 **Branded demo page** — their logo, their name, "make your first API call in under a minute"
+   - 📊 **Value proposition** — which of your endpoints solve which of their problems
+   - 💼 **LinkedIn message** — short, specific, referencing something real about their company
+4. **Scores and ranks leads** — tracks demo page engagement and surfaces the hottest prospects
+5. **Tells you when to follow up** — engagement signals drive re-engagement timing
 
-Every interaction flows through the **Claude Agent SDK** → **Anthropic API**. Lean, scrappy, founder-grade infrastructure.
-
-**Time to first outreach: under 3 minutes.**
-
----
-
-## 🎯 How It Works
-
-### The Agent Pipeline
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌────────────────────┐
-│  1. UPLOAD SPEC  │────▶│  2. PICK TARGET   │────▶│  3. CLAUDE AGENT   │
-│                  │     │                   │     │                    │
-│  Paste or upload │     │  Enter company    │     │  Reads your spec   │
-│  your OpenAPI    │     │  URL to target    │     │  Scrapes target    │
-│  spec (JSON/YAML)│     │                   │     │  Maps pain points  │
-└─────────────────┘     └──────────────────┘     └────────┬───────────┘
-                                                           │
-                    ┌──────────────────────────────────────┘
-                    ▼
-     ┌──────────────────────────────────┐
-     │        YOUR GROWTH SUITE         │
-     │                                  │
-     │  📧 Cold email (< 4 lines)      │
-     │  🎯 Branded demo page per target │
-     │  📊 Tailored value proposition   │
-     │  📈 Google Sheets tracking       │
-     │  🚀 One-click send via Resend    │
-     └──────────────────────────────────┘
-```
-
-1. **Spec Ingestion** — Parses your OpenAPI spec, extracts endpoints with descriptions, and identifies the core value props of your service
-2. **Target Research** — Claude agent browses the target company's website, downloads their logo, reads their tagline, analyzes their tech stack, and identifies specific pain points your API solves
-3. **Artifact Generation** — Produces a personalized outreach package:
-   - **Cold email** — Under 4 lines, curiosity-driven, with demo link
-   - **Demo page** — Branded for the target company with their logo, name, and a "make your first API call in under a minute" experience
-   - **Value prop** — Maps their pain points to your endpoints
-4. **Tracking** — Page visits, interactions, feedback, and survey responses logged to Google Sheets
+Every action flows through the **Claude Agent SDK** → **Anthropic API**. Tracking writes to Google Sheets via MCP. No database needed.
 
 ---
 
-## 🖥 Personalized Demo Pages
+## Lead Scoring
 
-Each target company gets its own branded demo page — generated automatically from your spec + their company data:
+Not all prospects are equal. Growth Engine automatically ranks leads based on real engagement:
 
-- **Company branding** — logo, name, tagline pulled from their site (falls back to clean generic styling)
-- **Parameterized per target** — every company you target gets a unique page
-- **"Make your first API call"** — interactive walkthrough using your actual endpoints
-- **Pain point mapping** — shows how specific endpoints solve their specific problems
-- **Feedback capture** — surveys visitors for their biggest pain points (feeds back to Sheets)
-- **Activity tracking** — page visits, interactions, and chat messages logged automatically
+| Signal | Weight | Meaning |
+|--------|--------|---------|
+| Demo page opened | Low | Curiosity |
+| Time on page > 2 min | Medium | Interest |
+| API playground interaction | High | Intent |
+| Feedback survey submitted | Very High | Engaged |
+| Multiple visits | Very High | Evaluating |
+
+Your Google Sheet auto-sorts by engagement score. Hottest leads float to the top:
+
+- 🔥 **Hot** (>80): Follow up today
+- 🟡 **Warm** (40-80): Send case study in 2 days
+- ❄️ **Cold** (<40): Re-engage in a week
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Clone
 git clone https://github.com/zackproser/claude-growth-engine.git
 cd claude-growth-engine
-
-# Install
 pnpm install
-
-# Set your Anthropic API key
-cp .env.example .env.local
-# Edit .env.local with your ANTHROPIC_API_KEY
-
-# Run
+echo 'ANTHROPIC_API_KEY=your-key' > .env.local
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and paste any OpenAPI spec to get started.
+Open [localhost:3000](http://localhost:3000). There's a sample API spec in `examples/sample-spec.json` to test with.
 
 ---
 
-## 🏗 Architecture
+## How It Works Under the Hood
 
-```
-claude-growth-engine/
-├── src/
-│   ├── app/
-│   │   ├── page.tsx              # Landing page
-│   │   ├── upload/page.tsx       # OpenAPI spec upload + validation
-│   │   ├── target/page.tsx       # Target company input
-│   │   ├── results/page.tsx      # Generated outreach suite
-│   │   └── demo/[id]/page.tsx    # Personalized demo pages (per target)
-│   ├── components/
-│   │   ├── SpecUploader.tsx      # Upload/paste OpenAPI spec
-│   │   ├── TargetAnalyzer.tsx    # Target company research UI
-│   │   ├── DemoPage.tsx          # Branded demo page template
-│   │   └── OutreachSuite.tsx     # Generated artifacts display
-│   ├── lib/
-│   │   ├── agent.ts              # Claude Agent SDK + MCP orchestration
-│   │   ├── spec-parser.ts        # OpenAPI spec validation & parsing
-│   │   └── demo-generator.ts     # Personalized demo page builder
-│   └── api/
-│       ├── analyze/route.ts      # Agent pipeline API endpoint
-│       ├── track/route.ts        # Event tracking → Sheets via MCP
-│       └── send/route.ts         # Resend email dispatch
-├── .mcp.json                       # MCP server config (google-sheets-mcp)
-├── img/
-│   ├── claude-logo.svg           # Official Claude logo
-│   ├── powered-by-claude.svg     # Powered by Claude badge
-│   └── growth-engine-flow.svg    # Architecture diagram
-└── README.md
-```
-
-### Why Claude Agent SDK + MCP?
-
-The Agent SDK (`@anthropic-ai/claude-agent-sdk`) gives you Claude Code as a library — with built-in tools for web search, web fetch, file operations, and bash. But the real power is **native MCP (Model Context Protocol) support**.
-
-One `query()` call connects the agent to:
-- **Built-in tools** — `WebSearch` + `WebFetch` for target company research
-- **MCP servers** — `google-sheets-mcp` for tracking, any other MCP server you need
+The Claude Agent SDK gives the agent real tools — web search, web fetch, and MCP server connections. One `query()` call does everything:
 
 ```typescript
 import { query } from "@anthropic-ai/claude-agent-sdk";
 
 for await (const message of query({
-  prompt: `Research ${targetUrl}, find their pain points, 
-           generate outreach artifacts, and log to tracking sheet`,
+  prompt: `Research ${targetUrl}, find their pain points,
+           generate outreach artifacts, log to tracking sheet`,
   options: {
     mcpServers: {
       "google-sheets": {
@@ -179,40 +102,23 @@ for await (const message of query({
 }
 ```
 
-The agent researches, generates, and tracks — all through the Anthropic API. **Every agent action = API usage = Anthropic revenue.**
+The agent researches, generates, scores, and tracks — all through the Anthropic API. **Every agent action = API call = Anthropic revenue.**
 
 ---
 
-## 📊 Tracking & Analytics
-
-Growth Engine uses **Google Sheets via MCP** as a lightweight, founder-friendly analytics layer. The Claude agent writes directly to Sheets through the `google-sheets-mcp` server — no custom integration code needed.
-
-| What's Tracked | How |
-|---------------|-----|
-| Demo page visits | Agent logs via MCP → Sheets |
-| API call attempts | Agent logs which endpoints, success/fail |
-| Visitor feedback | Survey responses captured, logged to Sheets |
-| Chat messages | If visitor engages, logged to Sheets |
-| Email opens/clicks | Resend webhooks → API route → Sheets |
-| Pain point survey | Agent surveys visitors if pain points not found on site |
-
-No database. No analytics platform. Just a spreadsheet you can share with your co-founder.
-
----
-
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | Next.js 16, TypeScript, Tailwind CSS |
-| **AI Agent** | Claude Agent SDK + MCP (Anthropic API) |
-| **Sheets Tracking** | `google-sheets-mcp` (MCP server) |
+| **AI Agent** | Claude Agent SDK + MCP |
+| **Spec Validation** | swagger-parser |
+| **Sheets Tracking** | google-sheets-mcp |
 | **Email** | Resend |
-| **Deployment** | Vercel |
 
 ---
 
-## 📄 License
+## License
 
 MIT — see [LICENSE](LICENSE) for details.
 
