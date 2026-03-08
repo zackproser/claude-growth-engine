@@ -283,7 +283,7 @@ export default function DemoPage() {
                     <div className="flex gap-1 mb-3">
                       {Object.entries(langs).map(([key, lang]) => (
                         <button key={key}
-                          onClick={() => { setSelectedLang(key); trackEvent('lang_selected', { language: key, endpoint: ep.path }); }}
+                          onClick={() => setSelectedLang(key)}
                           className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                             selectedLang === key ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
                           }`}>
@@ -297,11 +297,16 @@ export default function DemoPage() {
                     </div>
 
                     <div className="mt-4 flex gap-3">
-                      <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                        Get API Key →
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(langs[selectedLang].code);
+                          trackEvent('lang_selected', { language: selectedLang, endpoint: ep.path });
+                        }}
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        📋 Copy Snippet
                       </button>
                       <button className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                        View Full Docs
+                        Get API Key →
                       </button>
                     </div>
                   </div>
