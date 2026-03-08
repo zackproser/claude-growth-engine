@@ -12,7 +12,7 @@
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
-[![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent%20SDK-D97757?style=for-the-badge)](https://docs.anthropic.com/en/docs/agents-sdk)
+[![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent%20SDK-D97757?style=for-the-badge)](https://platform.claude.com/docs/en/agent-sdk/overview)
 [![License: MIT](https://img.shields.io/badge/License-MIT-E8C547?style=for-the-badge)](LICENSE)
 
 <br />
