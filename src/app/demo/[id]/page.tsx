@@ -134,24 +134,90 @@ export default function DemoPage() {
       </div>
 
       <main className="max-w-5xl mx-auto px-6">
-        {/* Pain Points */}
-        {company.painPoints.length > 0 && (
-          <section className="py-14 border-b border-slate-200">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Your challenges</h2>
-            <p className="text-slate-500 mb-6">We identified these from analyzing {company.name}&apos;s public presence</p>
-            <div className="grid md:grid-cols-3 gap-4">
-              {company.painPoints.map((pp, i) => (
-                <div key={i} className="group relative bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
-                  <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center text-xs font-bold">{i + 1}</div>
-                  <p className="text-slate-700 text-sm leading-relaxed pr-8">{pp}</p>
-                  <div className="mt-3 pt-3 border-t border-slate-100">
-                    <p className="text-xs text-orange-500 font-semibold">{spec.name} solves this →</p>
+        {/* Before → After Story Blocks */}
+        <section className="py-14 border-b border-slate-200">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">How {spec.name} transforms {company.name}</h2>
+            <p className="text-slate-500">Each challenge mapped to a solution — with the API call to prove it</p>
+          </div>
+
+          <div className="space-y-8">
+            {(() => {
+              // Try to parse story blocks from demo-page artifact
+              const demoArtifact = result.artifacts.find(a => a.type === 'demo-page');
+              let storyBlocks: Array<{ painPoint: string; solution: string; endpointPath?: string; endpointMethod?: string; exampleRequest?: string; exampleResponse?: string }> = [];
+              
+              if (demoArtifact) {
+                try {
+                  const parsed = JSON.parse(demoArtifact.content);
+                  if (Array.isArray(parsed)) storyBlocks = parsed;
+                } catch {
+                  // Fallback: use pain points + endpoints as simple interleave
+                }
+              }
+
+              // Fallback if agent didn't return structured blocks
+              if (storyBlocks.length === 0 && company.painPoints.length > 0) {
+                storyBlocks = company.painPoints.slice(0, 5).map((pp, i) => ({
+                  painPoint: pp,
+                  solution: `${spec.name} handles this through its ${spec.endpoints[i]?.path || 'API'} endpoint`,
+                  endpointPath: spec.endpoints[i]?.path,
+                  endpointMethod: spec.endpoints[i]?.method,
+                }));
+              }
+
+              return storyBlocks.map((block, i) => (
+                <div key={i} className="relative">
+                  {/* Connector line */}
+                  {i < storyBlocks.length - 1 && (
+                    <div className="absolute left-8 top-full h-8 w-0.5 bg-slate-200 z-0" />
+                  )}
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* Before */}
+                    <div className="bg-red-50 rounded-xl border border-red-100 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-6 h-6 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-xs font-bold">✗</span>
+                        <span className="text-xs font-semibold text-red-500 uppercase tracking-wider">Before</span>
+                      </div>
+                      <p className="text-slate-700 text-sm leading-relaxed">{block.painPoint}</p>
+                    </div>
+
+                    {/* After */}
+                    <div className="bg-green-50 rounded-xl border border-green-100 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">✓</span>
+                        <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">After</span>
+                      </div>
+                      <p className="text-slate-700 text-sm leading-relaxed">{block.solution}</p>
+                    </div>
                   </div>
+
+                  {/* API Call Proof */}
+                  {(block.endpointPath || block.exampleRequest) && (
+                    <div className="mt-3 bg-slate-900 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+                      {block.exampleRequest ? (
+                        <pre className="text-green-400 whitespace-pre-wrap">{block.exampleRequest}</pre>
+                      ) : (
+                        <p className="text-green-400">
+                          curl -X {block.endpointMethod || 'GET'}{' '}
+                          <span className="text-white">{spec.baseUrl || 'https://api.example.com'}{block.endpointPath}</span>{' '}
+                          -H &quot;Authorization: Bearer YOUR_KEY&quot;
+                        </p>
+                      )}
+                      {block.exampleResponse && (
+                        <div className="mt-2 pt-2 border-t border-slate-700">
+                          <p className="text-slate-500 mb-1"># Response:</p>
+                          <pre className="text-amber-300 whitespace-pre-wrap">{block.exampleResponse}</pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+              ));
+            })()}
+          </div>
+        </section>
 
         {/* Value Prop */}
         {valueProp && (

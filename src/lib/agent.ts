@@ -58,7 +58,7 @@ Return your findings as a JSON object with this exact structure:
     {
       "type": "demo-page",
       "title": "Personalized Demo Page Content",
-      "content": "Content for a branded demo page for this company. Include: a personalized headline using their company name, a description of how the API solves their specific problems, a walkthrough of 2-3 relevant endpoints they'd use first, and a 'try your first API call' section with example request/response."
+      "content": "A JSON array of 3-5 'story blocks' that interleave pain points with API solutions. Each block has: painPoint (the before), solution (the after — how the API fixes it), endpointPath (the specific endpoint), endpointMethod (GET/POST/etc), exampleRequest (a curl or code snippet showing the call), exampleResponse (a realistic JSON response). Format as a JSON array: [{\"painPoint\": \"...\", \"solution\": \"...\", \"endpointPath\": \"/path\", \"endpointMethod\": \"POST\", \"exampleRequest\": \"curl ...\", \"exampleResponse\": \"{...}\"}]. This creates a technical narrative: problem → solution → proof."
     },
     {
       "type": "linkedin-message",
