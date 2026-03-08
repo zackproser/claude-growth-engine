@@ -133,15 +133,14 @@ claude-growth-engine/
 │   │   ├── DemoPage.tsx          # Branded demo page template
 │   │   └── OutreachSuite.tsx     # Generated artifacts display
 │   ├── lib/
-│   │   ├── agent.ts              # Claude Agent SDK orchestration
+│   │   ├── agent.ts              # Claude Agent SDK + MCP orchestration
 │   │   ├── spec-parser.ts        # OpenAPI spec validation & parsing
-│   │   ├── company-research.ts   # Target company scraping & analysis
-│   │   ├── demo-generator.ts     # Personalized demo page builder
-│   │   └── sheets.ts             # Google Sheets tracking & logging
+│   │   └── demo-generator.ts     # Personalized demo page builder
 │   └── api/
 │       ├── analyze/route.ts      # Agent pipeline API endpoint
-│       ├── track/route.ts        # Event tracking endpoint
+│       ├── track/route.ts        # Event tracking → Sheets via MCP
 │       └── send/route.ts         # Resend email dispatch
+├── .mcp.json                       # MCP server config (google-sheets-mcp)
 ├── img/
 │   ├── claude-logo.svg           # Official Claude logo
 │   ├── powered-by-claude.svg     # Powered by Claude badge
@@ -149,29 +148,55 @@ claude-growth-engine/
 └── README.md
 ```
 
-### Why Claude Agent SDK?
+### Why Claude Agent SDK + MCP?
 
-The Agent SDK wraps the Anthropic API with agent-native primitives — tool use, multi-step reasoning, web browsing, and structured outputs. Every agent action is an API call. When your prospects interact with their demo pages, those interactions flow through Claude too.
+The Agent SDK (`@anthropic-ai/claude-agent-sdk`) gives you Claude Code as a library — with built-in tools for web search, web fetch, file operations, and bash. But the real power is **native MCP (Model Context Protocol) support**.
 
-**Every customer touchpoint = API usage = Anthropic revenue.**
+One `query()` call connects the agent to:
+- **Built-in tools** — `WebSearch` + `WebFetch` for target company research
+- **MCP servers** — `google-sheets-mcp` for tracking, any other MCP server you need
 
-For founders, this means your growth engine gets smarter with every interaction, and you're building on infrastructure that scales with you.
+```typescript
+import { query } from "@anthropic-ai/claude-agent-sdk";
+
+for await (const message of query({
+  prompt: `Research ${targetUrl}, find their pain points, 
+           generate outreach artifacts, and log to tracking sheet`,
+  options: {
+    mcpServers: {
+      "google-sheets": {
+        command: "npx",
+        args: ["-y", "google-sheets-mcp"]
+      }
+    },
+    allowedTools: [
+      "WebSearch", "WebFetch", "Bash",
+      "mcp__google-sheets__*"
+    ]
+  }
+})) {
+  console.log(message);
+}
+```
+
+The agent researches, generates, and tracks — all through the Anthropic API. **Every agent action = API usage = Anthropic revenue.**
 
 ---
 
 ## 📊 Tracking & Analytics
 
-Growth Engine uses Google Sheets as a lightweight, founder-friendly analytics layer:
+Growth Engine uses **Google Sheets via MCP** as a lightweight, founder-friendly analytics layer. The Claude agent writes directly to Sheets through the `google-sheets-mcp` server — no custom integration code needed.
 
-| What's Tracked | Where |
-|---------------|-------|
-| Demo page visits | Sheets (per target company) |
-| API call attempts | Sheets (which endpoints, success/fail) |
-| Visitor feedback | Sheets (survey responses, pain points) |
-| Chat messages | Sheets (if visitor engages with chat) |
-| Email opens/clicks | Resend webhooks → Sheets |
+| What's Tracked | How |
+|---------------|-----|
+| Demo page visits | Agent logs via MCP → Sheets |
+| API call attempts | Agent logs which endpoints, success/fail |
+| Visitor feedback | Survey responses captured, logged to Sheets |
+| Chat messages | If visitor engages, logged to Sheets |
+| Email opens/clicks | Resend webhooks → API route → Sheets |
+| Pain point survey | Agent surveys visitors if pain points not found on site |
 
-No database needed. No analytics platform to configure. Just a spreadsheet you can share with your co-founder.
+No database. No analytics platform. Just a spreadsheet you can share with your co-founder.
 
 ---
 
@@ -180,9 +205,9 @@ No database needed. No analytics platform to configure. Just a spreadsheet you c
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | Next.js 16, TypeScript, Tailwind CSS |
-| **AI Agent** | Claude Agent SDK (Anthropic API) |
+| **AI Agent** | Claude Agent SDK + MCP (Anthropic API) |
+| **Sheets Tracking** | `google-sheets-mcp` (MCP server) |
 | **Email** | Resend |
-| **Tracking** | Google Sheets API |
 | **Deployment** | Vercel |
 
 ---
