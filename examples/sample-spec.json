@@ -1,0 +1,158 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PayFlow API",
+    "description": "Unified payments infrastructure for SaaS companies. Accept payments, manage subscriptions, handle invoicing, and automate revenue recognition — all through one API. Built for developers who hate dealing with payment complexity.",
+    "version": "2.1.0",
+    "contact": {
+      "name": "PayFlow Developer Support",
+      "url": "https://payflow.dev/docs",
+      "email": "developers@payflow.dev"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.payflow.dev/v2",
+      "description": "Production"
+    },
+    {
+      "url": "https://sandbox.payflow.dev/v2",
+      "description": "Sandbox"
+    }
+  ],
+  "paths": {
+    "/customers": {
+      "get": {
+        "operationId": "listCustomers",
+        "summary": "List all customers",
+        "description": "Returns a paginated list of customers with their subscription status, MRR contribution, and payment health score."
+      },
+      "post": {
+        "operationId": "createCustomer",
+        "summary": "Create a customer",
+        "description": "Create a new customer record. Automatically syncs with your CRM if connected via webhook."
+      }
+    },
+    "/customers/{id}": {
+      "get": {
+        "operationId": "getCustomer",
+        "summary": "Get customer details",
+        "description": "Returns full customer profile including payment methods, subscription history, and lifetime value."
+      }
+    },
+    "/subscriptions": {
+      "get": {
+        "operationId": "listSubscriptions",
+        "summary": "List subscriptions",
+        "description": "Returns all active, trialing, past_due, and canceled subscriptions with MRR impact analysis."
+      },
+      "post": {
+        "operationId": "createSubscription",
+        "summary": "Create a subscription",
+        "description": "Start a new subscription for a customer. Supports free trials, usage-based billing, seat-based pricing, and hybrid models."
+      }
+    },
+    "/subscriptions/{id}": {
+      "patch": {
+        "operationId": "updateSubscription",
+        "summary": "Update a subscription",
+        "description": "Upgrade, downgrade, or modify a subscription. Automatically prorates charges and handles mid-cycle changes."
+      },
+      "delete": {
+        "operationId": "cancelSubscription",
+        "summary": "Cancel a subscription",
+        "description": "Cancel at period end or immediately. Optionally trigger a cancellation survey and win-back flow."
+      }
+    },
+    "/invoices": {
+      "get": {
+        "operationId": "listInvoices",
+        "summary": "List invoices",
+        "description": "Returns all invoices with payment status, retry history, and dunning stage."
+      },
+      "post": {
+        "operationId": "createInvoice",
+        "summary": "Create an invoice",
+        "description": "Generate a one-off or recurring invoice. Supports multi-currency, tax calculation, and custom line items."
+      }
+    },
+    "/invoices/{id}/pay": {
+      "post": {
+        "operationId": "payInvoice",
+        "summary": "Pay an invoice",
+        "description": "Charge the customer's default payment method. Falls back through saved methods if primary fails."
+      }
+    },
+    "/payments": {
+      "get": {
+        "operationId": "listPayments",
+        "summary": "List payments",
+        "description": "Returns all payment attempts with processor response codes, fee breakdowns, and settlement timelines."
+      },
+      "post": {
+        "operationId": "createPayment",
+        "summary": "Create a one-time payment",
+        "description": "Charge a customer's payment method for a one-time amount. Supports 135+ currencies and automatic FX conversion."
+      }
+    },
+    "/payments/{id}/refund": {
+      "post": {
+        "operationId": "refundPayment",
+        "summary": "Refund a payment",
+        "description": "Full or partial refund. Automatically adjusts revenue recognition and updates MRR."
+      }
+    },
+    "/checkout/sessions": {
+      "post": {
+        "operationId": "createCheckoutSession",
+        "summary": "Create a checkout session",
+        "description": "Generate a hosted checkout page with your branding. Supports A/B testing pricing, upsells, and cross-sells."
+      }
+    },
+    "/revenue/mrr": {
+      "get": {
+        "operationId": "getMRR",
+        "summary": "Get MRR breakdown",
+        "description": "Returns current MRR with breakdown by new, expansion, contraction, churn, and reactivation. Includes 12-month forecast."
+      }
+    },
+    "/revenue/recognition": {
+      "get": {
+        "operationId": "getRevenueRecognition",
+        "summary": "Revenue recognition report",
+        "description": "ASC 606 compliant revenue recognition schedule. Exports to QuickBooks, Xero, or NetSuite."
+      }
+    },
+    "/dunning/campaigns": {
+      "get": {
+        "operationId": "listDunningCampaigns",
+        "summary": "List dunning campaigns",
+        "description": "Returns active dunning campaigns with recovery rates, email open rates, and predicted churn impact."
+      },
+      "post": {
+        "operationId": "createDunningCampaign",
+        "summary": "Create a dunning campaign",
+        "description": "Set up automated failed payment recovery. Configurable retry schedules, email sequences, and escalation rules."
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List webhook endpoints",
+        "description": "Returns all configured webhook endpoints with delivery stats and failure rates."
+      },
+      "post": {
+        "operationId": "createWebhook",
+        "summary": "Create a webhook endpoint",
+        "description": "Subscribe to payment events (payment.succeeded, subscription.canceled, invoice.past_due, etc). Signed payloads with automatic retries."
+      }
+    },
+    "/usage/events": {
+      "post": {
+        "operationId": "reportUsage",
+        "summary": "Report usage events",
+        "description": "Report metered usage for usage-based billing. Supports batch ingestion up to 10K events per request."
+      }
+    }
+  }
+}
