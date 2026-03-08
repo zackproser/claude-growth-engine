@@ -25,7 +25,7 @@ Go to ${targetUrl} and research everything you can about them:
 - What industry are they in?
 - What's their tech stack (if visible)?
 - What are their biggest pain points that the founder's API could solve?
-- Try to find their logo URL (look for og:image, favicon, or logo in the page source)
+- IMPORTANT: Find their logo URL. Search for "${targetUrl} logo" or look at their site's og:image meta tag, apple-touch-icon, or /favicon.ico. Also try common paths like /logo.svg, /logo.png. Use WebSearch to find "[company name] logo png" if not found on their site. The logoUrl MUST be a full https:// URL to an actual image file.
 - Look for any indicators of their current technical challenges
 
 ### Step 2: Generate outreach artifacts
