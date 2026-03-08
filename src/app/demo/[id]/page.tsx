@@ -206,14 +206,8 @@ export default function DemoPage() {
           </div>
         </section>
 
-        {/* Additional agent-generated content */}
-        {demoContent && (
-          <section className="mb-14">
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm prose prose-slate prose-sm max-w-none">
-              <ReactMarkdown>{demoContent.content}</ReactMarkdown>
-            </div>
-          </section>
-        )}
+        {/* Agent-generated demo content is already represented in the structured sections above.
+             The raw demo-page artifact is intentionally NOT rendered here to avoid duplication. */}
 
         {/* Feedback survey */}
         <section className="mb-14">

@@ -89,25 +89,45 @@ export default function HomePage() {
                 ))}
               </ul>
             </div>
-            <div className="bg-dark-alt/50 border border-neutral-800 rounded-xl p-6">
-              <h3 className="text-sm font-semibold text-primary mb-4 uppercase tracking-wider">Lead Scoring</h3>
-              <p className="text-neutral-400 text-sm mb-4">
-                Track engagement on demo pages. Hottest leads float to the top of your sheet.
-              </p>
-              <div className="space-y-2">
+            <div className="bg-dark-alt/50 border border-neutral-800 rounded-xl p-5 overflow-hidden">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">📊</span>
+                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Your Growth Sheet</h3>
+                <span className="text-[10px] bg-green-900/30 text-green-400 px-2 py-0.5 rounded-full ml-auto">● Live</span>
+              </div>
+              {/* Mock spreadsheet */}
+              <div className="bg-dark rounded-lg overflow-hidden border border-neutral-800 text-[11px] font-mono">
+                {/* Header row */}
+                <div className="grid grid-cols-[1fr_60px_60px_80px_70px] bg-neutral-800/50 text-neutral-500 px-3 py-1.5 border-b border-neutral-700">
+                  <span>Company</span>
+                  <span>Score</span>
+                  <span>Temp</span>
+                  <span>Last Active</span>
+                  <span>Next Action</span>
+                </div>
                 {[
-                  { temp: '🔥', label: 'Hot', desc: '4 min on demo, tried 3 endpoints', color: 'text-red-400' },
-                  { temp: '🟡', label: 'Warm', desc: 'Opened demo page, read value prop', color: 'text-yellow-400' },
-                  { temp: '❄️', label: 'Cold', desc: 'Clicked email link, bounced', color: 'text-blue-400' },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center gap-3 bg-dark rounded-lg px-4 py-2.5">
-                    <span className="text-lg">{item.temp}</span>
-                    <span className={`text-sm font-semibold w-12 ${item.color}`}>{item.label}</span>
-                    <span className="text-xs text-neutral-500">{item.desc}</span>
+                  { co: 'WorkOS', score: '92', temp: '🔥', tempColor: 'text-red-400', active: '2m ago', action: 'Call today' },
+                  { co: 'Linear', score: '67', temp: '🟡', tempColor: 'text-yellow-400', active: '1d ago', action: 'Send case study' },
+                  { co: 'Vercel', score: '45', temp: '🟡', tempColor: 'text-yellow-400', active: '3d ago', action: 'Re-engage Fri' },
+                  { co: 'Supabase', score: '23', temp: '❄️', tempColor: 'text-blue-400', active: '1w ago', action: 'New content' },
+                  { co: 'Clerk', score: '81', temp: '🔥', tempColor: 'text-red-400', active: '5m ago', action: 'Follow up now' },
+                ].map((row) => (
+                  <div key={row.co} className="grid grid-cols-[1fr_60px_60px_80px_70px] text-neutral-400 px-3 py-1.5 border-b border-neutral-800/50 hover:bg-neutral-800/30">
+                    <span className="text-text-light">{row.co}</span>
+                    <span>{row.score}</span>
+                    <span className={row.tempColor}>{row.temp}</span>
+                    <span className="text-neutral-500">{row.active}</span>
+                    <span className="text-primary">{row.action}</span>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-neutral-600 mt-3">Tracked via Google Sheets MCP — no database needed.</p>
+              <div className="flex items-center justify-between mt-2.5">
+                <p className="text-[10px] text-neutral-600">Auto-synced via Google Sheets MCP — no database needed</p>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  tracking 5 leads
+                </div>
+              </div>
             </div>
           </div>
         </div>

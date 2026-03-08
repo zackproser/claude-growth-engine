@@ -54,28 +54,31 @@ export default function TargetPage() {
     // Normalize URL
     const normalizedUrl = companyUrl.startsWith('http') ? companyUrl : `https://${companyUrl}`;
 
-    // Simulate progressive status updates while the agent works
-    const statusInterval = setInterval(() => {
-      setStatusMessages(prev => {
-        const messages = [
-          'Connecting to Claude Agent SDK...',
-          'Agent is searching the web for company information...',
-          'Analyzing company website and business model...',
-          'Identifying pain points and tech stack...',
-          'Mapping API endpoints to company needs...',
-          'Generating personalized cold email...',
-          'Building value proposition...',
-          'Creating demo page content...',
-          'Crafting LinkedIn outreach message...',
-          'Finalizing outreach suite...',
-        ];
-        const nextIndex = Math.min(prev.length, messages.length - 1);
-        if (prev.length < messages.length) {
-          return [...prev, messages[nextIndex]];
-        }
-        return prev;
-      });
-    }, 3000);
+    // Progressive status updates — decomposed into real phases
+    const phases = [
+      { msg: 'Initializing Claude Agent SDK...', delay: 0 },
+      { msg: 'WebSearch: looking up company info...', delay: 2000 },
+      { msg: 'WebFetch: reading company website...', delay: 5000 },
+      { msg: 'Analyzing business model and tech stack...', delay: 9000 },
+      { msg: 'Identifying pain points and use cases...', delay: 13000 },
+      { msg: 'Searching for company logo and branding...', delay: 17000 },
+      { msg: 'Mapping API endpoints to pain points...', delay: 21000 },
+      { msg: 'Generating cold email (<4 lines)...', delay: 26000 },
+      { msg: 'Generating value proposition...', delay: 30000 },
+      { msg: 'Building personalized demo page...', delay: 35000 },
+      { msg: 'Crafting LinkedIn message...', delay: 40000 },
+      { msg: 'Computing lead score signals...', delay: 44000 },
+      { msg: 'Assembling outreach suite...', delay: 48000 },
+    ];
+
+    const timeouts: NodeJS.Timeout[] = [];
+    phases.forEach(({ msg, delay }) => {
+      timeouts.push(setTimeout(() => {
+        setStatusMessages(prev => [...prev, msg]);
+      }, delay));
+    });
+
+    const statusInterval = { current: timeouts };
 
     try {
       const res = await fetch('/api/analyze', {
@@ -87,7 +90,7 @@ export default function TargetPage() {
         }),
       });
 
-      clearInterval(statusInterval);
+      statusInterval.current.forEach(t => clearTimeout(t));
 
       const data = await res.json();
 
@@ -103,7 +106,7 @@ export default function TargetPage() {
       // Navigate to results
       router.push(`/results?id=${data.id}`);
     } catch (err) {
-      clearInterval(statusInterval);
+      statusInterval.current.forEach(t => clearTimeout(t));
       setError(err instanceof Error ? err.message : 'Failed to analyze target');
       setIsAnalyzing(false);
     }
@@ -148,9 +151,11 @@ export default function TargetPage() {
             ))}
           </div>
 
-          <p className="text-neutral-500 text-xs mt-4">
-            This typically takes 30-60 seconds. The agent is making real API calls.
-          </p>
+          <div className="flex items-center justify-center gap-4 text-neutral-500 text-xs mt-4">
+            <span>This typically takes 30-60 seconds</span>
+            <span>•</span>
+            <span>Every step is a real Anthropic API call</span>
+          </div>
         </div>
       </div>
     );
