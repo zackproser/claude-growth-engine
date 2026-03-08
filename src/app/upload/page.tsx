@@ -4,64 +4,66 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+interface EndpointInfo {
+  path: string;
+  method: string;
+  summary?: string;
+  description?: string;
+}
+
 interface ParsedSpec {
   name: string;
   description: string;
   version: string;
   baseUrl?: string;
   endpointCount: number;
-  endpoints: string[];
+  endpoints: EndpointInfo[];
 }
 
 export default function UploadPage() {
   const [specText, setSpecText] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [parsedSpec, setParsedSpec] = useState<ParsedSpec | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const router = useRouter();
 
-  const validateAndParseSpec = (content: string): ParsedSpec | null => {
+  const validateSpec = async (content: string) => {
+    setIsValidating(true);
+    setError('');
+    setValidationErrors([]);
+
     try {
-      let spec: any;
-      
-      // Try parsing as JSON first
-      try {
-        spec = JSON.parse(content);
-      } catch {
-        // Try parsing as YAML (basic YAML parsing)
-        // For a production app, you'd want to use a proper YAML parser
-        throw new Error('Invalid JSON format. Please provide a valid JSON OpenAPI specification.');
+      const res = await fetch('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rawSpec: content }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Validation failed');
+        return;
       }
 
-      // Validate OpenAPI structure
-      if (!spec.openapi && !spec.swagger) {
-        throw new Error('Not a valid OpenAPI specification. Missing "openapi" or "swagger" field.');
+      if (!data.valid) {
+        setValidationErrors(data.errors || ['Invalid OpenAPI specification']);
+        return;
       }
 
-      if (!spec.info) {
-        throw new Error('Invalid OpenAPI spec. Missing "info" section.');
-      }
+      setParsedSpec(data.parsed);
 
-      if (!spec.paths) {
-        throw new Error('Invalid OpenAPI spec. Missing "paths" section.');
-      }
-
-      // Extract information
-      const endpoints = Object.keys(spec.paths);
-      const servers = spec.servers || [];
-      const baseUrl = servers.length > 0 ? servers[0].url : '';
-
-      return {
-        name: spec.info.title || 'Unknown API',
-        description: spec.info.description || 'No description provided',
-        version: spec.info.version || 'Unknown',
-        baseUrl,
-        endpointCount: endpoints.length,
-        endpoints: endpoints.slice(0, 10) // Show first 10 endpoints
-      };
+      // Store raw spec + parsed data for the target page
+      localStorage.setItem('openapi-spec', JSON.stringify({
+        raw: content,
+        parsed: data.parsed,
+      }));
     } catch (err) {
-      throw new Error(err instanceof Error ? err.message : 'Unknown parsing error');
+      setError(err instanceof Error ? err.message : 'Failed to validate specification');
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -70,24 +72,7 @@ export default function UploadPage() {
       setError('Please paste your OpenAPI specification');
       return;
     }
-
-    setIsValidating(true);
-    setError('');
-
-    try {
-      const parsed = validateAndParseSpec(specText);
-      setParsedSpec(parsed);
-      
-      // Store in localStorage
-      localStorage.setItem('openapi-spec', JSON.stringify({
-        raw: specText,
-        parsed
-      }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Validation failed');
-    } finally {
-      setIsValidating(false);
-    }
+    await validateSpec(specText);
   };
 
   const handleFileUpload = async (file: File) => {
@@ -96,25 +81,9 @@ export default function UploadPage() {
       return;
     }
 
-    setIsValidating(true);
-    setError('');
-
-    try {
-      const content = await file.text();
-      const parsed = validateAndParseSpec(content);
-      setParsedSpec(parsed);
-      setSpecText(content);
-      
-      // Store in localStorage
-      localStorage.setItem('openapi-spec', JSON.stringify({
-        raw: content,
-        parsed
-      }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'File processing failed');
-    } finally {
-      setIsValidating(false);
-    }
+    const content = await file.text();
+    setSpecText(content);
+    await validateSpec(content);
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -131,7 +100,6 @@ export default function UploadPage() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
     }
@@ -152,7 +120,7 @@ export default function UploadPage() {
               OpenAPI Spec Validated ✓
             </h1>
             <p className="text-xl text-neutral-300">
-              Great! We've successfully parsed your API specification.
+              Validated with <span className="text-accent">swagger-parser</span> — your spec is good to go.
             </p>
           </div>
 
@@ -162,17 +130,14 @@ export default function UploadPage() {
                 <h3 className="text-lg font-semibold text-text-light mb-2">API Name</h3>
                 <p className="text-primary text-xl font-medium">{parsedSpec.name}</p>
               </div>
-              
               <div>
                 <h3 className="text-lg font-semibold text-text-light mb-2">Version</h3>
                 <p className="text-neutral-300">{parsedSpec.version}</p>
               </div>
-              
               <div>
                 <h3 className="text-lg font-semibold text-text-light mb-2">Endpoints</h3>
                 <p className="text-accent text-xl font-medium">{parsedSpec.endpointCount} endpoints</p>
               </div>
-              
               {parsedSpec.baseUrl && (
                 <div>
                   <h3 className="text-lg font-semibold text-text-light mb-2">Base URL</h3>
@@ -189,16 +154,28 @@ export default function UploadPage() {
             )}
 
             <div className="mt-6">
-              <h3 className="text-lg font-semibold text-text-light mb-3">Sample Endpoints</h3>
+              <h3 className="text-lg font-semibold text-text-light mb-3">Endpoints</h3>
               <div className="space-y-2">
-                {parsedSpec.endpoints.map((endpoint, index) => (
-                  <div key={index} className="bg-dark rounded px-3 py-2 text-sm font-mono text-neutral-300">
-                    {endpoint}
+                {parsedSpec.endpoints.slice(0, 15).map((ep, index) => (
+                  <div key={index} className="bg-dark rounded px-3 py-2 text-sm font-mono text-neutral-300 flex items-start gap-2">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
+                      ep.method === 'GET' ? 'bg-green-900/40 text-green-400' :
+                      ep.method === 'POST' ? 'bg-blue-900/40 text-blue-400' :
+                      ep.method === 'PUT' ? 'bg-yellow-900/40 text-yellow-400' :
+                      ep.method === 'DELETE' ? 'bg-red-900/40 text-red-400' :
+                      'bg-neutral-700 text-neutral-300'
+                    }`}>
+                      {ep.method}
+                    </span>
+                    <span>{ep.path}</span>
+                    {ep.summary && (
+                      <span className="text-neutral-500 text-xs ml-auto">{ep.summary}</span>
+                    )}
                   </div>
                 ))}
-                {parsedSpec.endpointCount > 10 && (
+                {parsedSpec.endpointCount > 15 && (
                   <p className="text-sm text-neutral-400">
-                    ... and {parsedSpec.endpointCount - 10} more endpoints
+                    ... and {parsedSpec.endpointCount - 15} more endpoints
                   </p>
                 )}
               </div>
@@ -226,7 +203,7 @@ export default function UploadPage() {
             Upload Your OpenAPI Specification
           </h1>
           <p className="text-xl text-neutral-300">
-            Choose your preferred method to provide your API specification
+            We validate with <span className="text-accent">swagger-parser</span> to ensure your spec is correct.
           </p>
         </div>
 
@@ -234,12 +211,9 @@ export default function UploadPage() {
           {/* File Upload */}
           <div className="bg-dark-alt rounded-lg border border-neutral-700 p-6">
             <h3 className="text-xl font-semibold text-text-light mb-4">Upload File</h3>
-            
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                dragActive
-                  ? 'border-primary bg-primary/10'
-                  : 'border-neutral-600 hover:border-neutral-500'
+                dragActive ? 'border-primary bg-primary/10' : 'border-neutral-600 hover:border-neutral-500'
               }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -249,20 +223,11 @@ export default function UploadPage() {
               <div className="space-y-4">
                 <div className="text-4xl">📄</div>
                 <div>
-                  <p className="text-text-light mb-2">
-                    Drag and drop your file here
-                  </p>
-                  <p className="text-sm text-neutral-400 mb-4">
-                    Supports .json, .yaml, .yml files
-                  </p>
+                  <p className="text-text-light mb-2">Drag and drop your file here</p>
+                  <p className="text-sm text-neutral-400 mb-4">Supports .json, .yaml, .yml files</p>
                   <label className="inline-block bg-neutral-700 hover:bg-neutral-600 text-text-light px-4 py-2 rounded cursor-pointer transition-colors">
                     Choose File
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".json,.yaml,.yml"
-                      onChange={handleFileInputChange}
-                    />
+                    <input type="file" className="hidden" accept=".json,.yaml,.yml" onChange={handleFileInputChange} />
                   </label>
                 </div>
               </div>
@@ -272,21 +237,19 @@ export default function UploadPage() {
           {/* Text Input */}
           <div className="bg-dark-alt rounded-lg border border-neutral-700 p-6">
             <h3 className="text-xl font-semibold text-text-light mb-4">Paste Specification</h3>
-            
             <div className="space-y-4">
               <textarea
                 value={specText}
                 onChange={(e) => setSpecText(e.target.value)}
-                placeholder="Paste your OpenAPI specification (JSON format) here..."
+                placeholder='Paste your OpenAPI specification (JSON) here...'
                 className="w-full h-48 bg-dark border border-neutral-600 rounded-lg px-4 py-3 text-text-light placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm"
               />
-              
               <button
                 onClick={handleTextSubmit}
                 disabled={isValidating || !specText.trim()}
                 className="w-full bg-primary text-dark py-3 rounded-lg font-semibold hover:bg-orange-600 disabled:bg-neutral-600 disabled:text-neutral-400 transition-colors"
               >
-                {isValidating ? 'Validating...' : 'Validate Specification'}
+                {isValidating ? 'Validating with swagger-parser...' : 'Validate Specification'}
               </button>
             </div>
           </div>
@@ -298,11 +261,19 @@ export default function UploadPage() {
           </div>
         )}
 
+        {validationErrors.length > 0 && (
+          <div className="mt-6 bg-red-900/20 border border-red-800 rounded-lg p-4">
+            <p className="text-red-300 font-semibold mb-2">Validation Errors:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              {validationErrors.map((err, i) => (
+                <li key={i} className="text-red-300 text-sm">{err}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="text-center mt-8">
-          <Link 
-            href="/"
-            className="text-neutral-400 hover:text-text-light transition-colors"
-          >
+          <Link href="/" className="text-neutral-400 hover:text-text-light transition-colors">
             ← Back to Home
           </Link>
         </div>
