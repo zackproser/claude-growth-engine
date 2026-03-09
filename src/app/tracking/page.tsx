@@ -5,19 +5,47 @@ import Link from 'next/link';
 import type { LeadScore, TrackingEvent } from '@/lib/types';
 
 const TEMP_CONFIG = {
-  hot: { emoji: '🔥', bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', label: 'Hot' },
-  warm: { emoji: '🟡', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', label: 'Warm' },
-  cold: { emoji: '❄️', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', label: 'Cold' },
+  hot: { emoji: '🔥', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600', label: 'Hot' },
+  warm: { emoji: '🟡', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-600', label: 'Warm' },
+  cold: { emoji: '❄️', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', label: 'Cold' },
 };
+
+function exportLeadsCSV(scores: LeadScore[]) {
+  const headers = ['Company', 'URL', 'Score', 'Temperature', 'Signals', 'Next Action', 'Next Action Date', 'Last Engagement'];
+  const rows = scores.map(s => [
+    s.companyName, s.companyUrl, String(s.score), s.temperature,
+    s.signals.join('; '), s.nextAction, s.nextActionDate, s.lastEngagement,
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `growth-engine-leads-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function exportActivityCSV(events: TrackingEvent[]) {
+  const headers = ['Timestamp', 'Event Type', 'Company URL', 'Result ID', 'Details'];
+  const rows = events.map(e => [
+    e.timestamp, e.eventType, e.companyUrl || '', e.resultId,
+    e.metadata ? Object.entries(e.metadata).map(([k, v]) => `${k}: ${v}`).join('; ') : '',
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `growth-engine-activity-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
 
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 80 ? 'bg-red-500' : score >= 40 ? 'bg-yellow-500' : 'bg-blue-500';
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 h-2 bg-neutral-700 rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-anthropic-border rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${score}%` }} />
       </div>
-      <span className="text-sm font-mono font-bold text-text-light w-8 text-right">{score}</span>
+      <span className="text-sm font-mono font-bold text-text-dark w-8 text-right">{score}</span>
     </div>
   );
 }
@@ -64,56 +92,81 @@ export default function TrackingPage() {
 
   if (loading) {
     return (
-      <div className="bg-dark min-h-screen flex items-center justify-center">
+      <div className="bg-cream min-h-screen flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="bg-dark min-h-screen py-10">
+    <div className="bg-cream min-h-screen py-10">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-text-light">Lead Tracking</h1>
-            <p className="text-neutral-400 text-sm mt-1">
+            <h1 className="text-3xl font-bold text-text-dark">Lead Tracking</h1>
+            <p className="text-text-muted text-sm mt-1">
               Real-time engagement signals → prioritized follow-ups
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+            <button
+              onClick={() => activeTab === 'leads' ? exportLeadsCSV(scores) : exportActivityCSV(events)}
+              className="text-xs bg-white border border-anthropic-border hover:border-text-muted text-text-dark px-3 py-1.5 rounded-md transition-colors shadow-sm"
+            >
+              📥 Export CSV
+            </button>
+            <div className="flex items-center gap-1.5 text-xs text-text-muted">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               Live — refreshes every 10s
             </div>
-            <Link href="/" className="text-sm text-neutral-400 hover:text-text-light transition-colors">
+            <Link href="/" className="text-sm text-text-muted hover:text-text-dark transition-colors">
               ← Home
             </Link>
           </div>
         </div>
 
+        {/* Spreadsheet banner */}
+        <div className="bg-white border border-anthropic-border rounded-xl p-4 mb-6 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📊</span>
+            <div>
+              <p className="text-sm font-semibold text-text-dark">Backed by Google Sheets via MCP</p>
+              <p className="text-xs text-text-muted">All activity synced in real-time. Export anytime or open directly in Sheets.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => activeTab === 'leads' ? exportLeadsCSV(scores) : exportActivityCSV(events)}
+              className="text-xs bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-md transition-colors font-medium"
+            >
+              📥 Download .csv
+            </button>
+          </div>
+        </div>
+
         {/* Summary cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-dark-alt rounded-xl border border-neutral-700 p-5">
-            <p className="text-3xl font-bold text-text-light">{scores.length}</p>
-            <p className="text-xs text-neutral-400 uppercase tracking-wider mt-1">Total Leads</p>
+          <div className="bg-white rounded-xl border border-anthropic-border p-5 shadow-sm">
+            <p className="text-3xl font-bold text-text-dark">{scores.length}</p>
+            <p className="text-xs text-text-muted uppercase tracking-wider mt-1">Total Leads</p>
           </div>
-          <div className="bg-dark-alt rounded-xl border border-red-500/20 p-5">
-            <p className="text-3xl font-bold text-red-400">{scores.filter(s => s.temperature === 'hot').length}</p>
-            <p className="text-xs text-neutral-400 uppercase tracking-wider mt-1">🔥 Hot Leads</p>
+          <div className="bg-white rounded-xl border border-red-200 p-5 shadow-sm">
+            <p className="text-3xl font-bold text-red-600">{scores.filter(s => s.temperature === 'hot').length}</p>
+            <p className="text-xs text-text-muted uppercase tracking-wider mt-1">🔥 Hot Leads</p>
           </div>
-          <div className="bg-dark-alt rounded-xl border border-neutral-700 p-5">
-            <p className="text-3xl font-bold text-text-light">{events.length}</p>
-            <p className="text-xs text-neutral-400 uppercase tracking-wider mt-1">Total Events</p>
+          <div className="bg-white rounded-xl border border-anthropic-border p-5 shadow-sm">
+            <p className="text-3xl font-bold text-text-dark">{events.length}</p>
+            <p className="text-xs text-text-muted uppercase tracking-wider mt-1">Total Events</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-dark-alt rounded-lg p-1 border border-neutral-700 w-fit">
+        <div className="flex gap-1 mb-6 bg-white rounded-lg p-1 border border-anthropic-border w-fit shadow-sm">
           <button
             onClick={() => setActiveTab('leads')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              activeTab === 'leads' ? 'bg-primary text-dark' : 'text-neutral-400 hover:text-text-light'
+              activeTab === 'leads' ? 'bg-text-dark text-white' : 'text-text-muted hover:text-text-dark'
             }`}
           >
             🎯 Lead Scores
@@ -121,7 +174,7 @@ export default function TrackingPage() {
           <button
             onClick={() => setActiveTab('activity')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              activeTab === 'activity' ? 'bg-primary text-dark' : 'text-neutral-400 hover:text-text-light'
+              activeTab === 'activity' ? 'bg-text-dark text-white' : 'text-text-muted hover:text-text-dark'
             }`}
           >
             📊 Activity Feed
@@ -132,10 +185,10 @@ export default function TrackingPage() {
         {activeTab === 'leads' && (
           <div className="space-y-3">
             {scores.length === 0 ? (
-              <div className="bg-dark-alt rounded-xl border border-neutral-700 p-12 text-center">
+              <div className="bg-white rounded-xl border border-anthropic-border p-12 text-center shadow-sm">
                 <p className="text-4xl mb-4">📊</p>
-                <p className="text-text-light font-semibold mb-2">No leads yet</p>
-                <p className="text-neutral-400 text-sm mb-4">Generate outreach and share demo pages to start tracking engagement</p>
+                <p className="text-text-dark font-semibold mb-2">No leads yet</p>
+                <p className="text-text-muted text-sm mb-4">Generate outreach and share demo pages to start tracking engagement</p>
                 <Link href="/upload" className="text-primary hover:underline text-sm">
                   Get started →
                 </Link>
@@ -144,13 +197,13 @@ export default function TrackingPage() {
               scores.map((lead, i) => {
                 const config = TEMP_CONFIG[lead.temperature];
                 return (
-                  <div key={i} className={`${config.bg} rounded-xl border ${config.border} p-5 transition-all hover:scale-[1.01]`}>
+                  <div key={i} className={`${config.bg} rounded-xl border ${config.border} p-5 transition-all hover:shadow-sm`}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{config.emoji}</span>
                         <div>
-                          <h3 className="text-lg font-semibold text-text-light">{lead.companyName}</h3>
-                          <p className="text-xs text-neutral-400">
+                          <h3 className="text-lg font-semibold text-text-dark">{lead.companyName}</h3>
+                          <p className="text-xs text-text-muted">
                             Last active: <TimeAgo timestamp={lead.lastEngagement} />
                           </p>
                         </div>
@@ -165,7 +218,7 @@ export default function TrackingPage() {
                     {/* Signals */}
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       {lead.signals.map((signal, j) => (
-                        <span key={j} className="text-xs bg-neutral-800 text-neutral-300 px-2.5 py-1 rounded-full">
+                        <span key={j} className="text-xs bg-white text-text-muted px-2.5 py-1 rounded-full border border-anthropic-border">
                           {signal}
                         </span>
                       ))}
@@ -173,10 +226,10 @@ export default function TrackingPage() {
 
                     {/* Next action */}
                     <div className="mt-3 flex items-center justify-between">
-                      <p className="text-sm text-neutral-300">
-                        <span className="text-neutral-500">Next:</span> {lead.nextAction}
+                      <p className="text-sm text-text-dark">
+                        <span className="text-text-muted">Next:</span> {lead.nextAction}
                       </p>
-                      <span className="text-xs text-neutral-500">{lead.nextActionDate}</span>
+                      <span className="text-xs text-text-muted">{lead.nextActionDate}</span>
                     </div>
                   </div>
                 );
@@ -189,16 +242,16 @@ export default function TrackingPage() {
         {activeTab === 'activity' && (
           <div className="space-y-1">
             {events.length === 0 ? (
-              <div className="bg-dark-alt rounded-xl border border-neutral-700 p-12 text-center">
+              <div className="bg-white rounded-xl border border-anthropic-border p-12 text-center shadow-sm">
                 <p className="text-4xl mb-4">📡</p>
-                <p className="text-text-light font-semibold mb-2">No activity yet</p>
-                <p className="text-neutral-400 text-sm">Events will appear here as prospects interact with demo pages</p>
+                <p className="text-text-dark font-semibold mb-2">No activity yet</p>
+                <p className="text-text-muted text-sm">Events will appear here as prospects interact with demo pages</p>
               </div>
             ) : (
-              <div className="bg-dark-alt rounded-xl border border-neutral-700 overflow-hidden">
+              <div className="bg-white rounded-xl border border-anthropic-border overflow-hidden shadow-sm">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-neutral-700 text-neutral-400 text-xs uppercase tracking-wider">
+                    <tr className="border-b border-anthropic-border bg-light-alt text-text-muted text-xs uppercase tracking-wider">
                       <th className="px-4 py-3 text-left">Time</th>
                       <th className="px-4 py-3 text-left">Event</th>
                       <th className="px-4 py-3 text-left">Company</th>
@@ -207,17 +260,17 @@ export default function TrackingPage() {
                   </thead>
                   <tbody>
                     {events.slice(0, 50).map((event, i) => (
-                      <tr key={i} className="border-b border-neutral-800 hover:bg-neutral-800/30 transition-colors">
-                        <td className="px-4 py-2.5 text-neutral-500 text-xs whitespace-nowrap">
+                      <tr key={i} className="border-b border-anthropic-border/50 hover:bg-cream transition-colors">
+                        <td className="px-4 py-2.5 text-text-muted text-xs whitespace-nowrap">
                           <TimeAgo timestamp={event.timestamp} />
                         </td>
                         <td className="px-4 py-2.5">
                           <EventBadge type={event.eventType} />
                         </td>
-                        <td className="px-4 py-2.5 text-neutral-300 text-xs truncate max-w-[200px]">
+                        <td className="px-4 py-2.5 text-text-dark text-xs truncate max-w-[200px]">
                           {event.companyUrl ? event.companyUrl.replace(/^https?:\/\//, '') : event.resultId.slice(0, 8)}
                         </td>
-                        <td className="px-4 py-2.5 text-neutral-500 text-xs truncate max-w-[250px]">
+                        <td className="px-4 py-2.5 text-text-muted text-xs truncate max-w-[250px]">
                           {event.metadata ? Object.entries(event.metadata).map(([k, v]) => `${k}: ${v}`).join(', ') : '—'}
                         </td>
                       </tr>
@@ -235,15 +288,15 @@ export default function TrackingPage() {
 
 function EventBadge({ type }: { type: string }) {
   const config: Record<string, { label: string; color: string }> = {
-    demo_viewed: { label: '👁 Demo View', color: 'bg-blue-500/20 text-blue-400' },
-    time_on_page: { label: '⏱ Time on Page', color: 'bg-purple-500/20 text-purple-400' },
-    api_playground: { label: '🔧 API Playground', color: 'bg-green-500/20 text-green-400' },
-    lang_selected: { label: '💻 Snippet Copy', color: 'bg-orange-500/20 text-orange-400' },
-    feedback_submitted: { label: '💬 Feedback', color: 'bg-yellow-500/20 text-yellow-400' },
-    email_sent: { label: '📧 Email Sent', color: 'bg-primary/20 text-primary' },
-    email_opened: { label: '📬 Email Opened', color: 'bg-green-500/20 text-green-400' },
-    link_clicked: { label: '🔗 Link Click', color: 'bg-neutral-500/20 text-neutral-400' },
-    page_view: { label: '📄 Page View', color: 'bg-neutral-500/20 text-neutral-400' },
+    demo_viewed: { label: '👁 Demo View', color: 'bg-blue-50 text-blue-700 border border-blue-200' },
+    time_on_page: { label: '⏱ Time on Page', color: 'bg-purple-50 text-purple-700 border border-purple-200' },
+    api_playground: { label: '🔧 API Playground', color: 'bg-green-50 text-green-700 border border-green-200' },
+    lang_selected: { label: '💻 Snippet Copy', color: 'bg-orange-50 text-orange-700 border border-orange-200' },
+    feedback_submitted: { label: '💬 Feedback', color: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
+    email_sent: { label: '📧 Email Sent', color: 'bg-primary/10 text-primary border border-primary/20' },
+    email_opened: { label: '📬 Email Opened', color: 'bg-green-50 text-green-700 border border-green-200' },
+    link_clicked: { label: '🔗 Link Click', color: 'bg-gray-50 text-gray-600 border border-gray-200' },
+    page_view: { label: '📄 Page View', color: 'bg-gray-50 text-gray-600 border border-gray-200' },
   };
 
   const c = config[type] || { label: type, color: 'bg-neutral-500/20 text-neutral-400' };
