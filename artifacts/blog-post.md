@@ -1,109 +1,164 @@
-# How Claude Turns Your API Into a Growth Engine (In Under 3 Minutes)
+# How I Built an AI Growth Engine That Turns Any API Into a Sales Pipeline
 
-*A practical guide for startup founders who'd rather build product than write cold emails.*
+*A startup founder's outbound problem, solved with the Claude Agent SDK in a weekend.*
 
 ---
 
-## The Problem Every YC Founder Hits
+## The Problem
 
-You've built an API. It's good. Your docs are solid. Demo Day is coming — or it just passed — and now you need to get your first 10 customers. Fast.
+You've built an API. Your docs are solid. Now you need customers.
 
-But outbound is a grind. You're Googling target companies, skimming their sites for pain points, writing personalized emails one at a time, building demo pages, tracking who's actually engaged. It eats 10+ hours a week that should go toward product.
+But outbound is a grind: researching target companies one by one, reading their sites, figuring out which of your endpoints solve which of their problems, writing personalized emails, building demo pages, tracking who's actually engaged. For a solo founder or a two-person team, this eats 10+ hours a week that should go toward product.
 
-What if an AI agent could do all of that in 3 minutes?
+I wanted to see if Claude could do all of that autonomously — and make the output good enough that a founder would actually send it.
 
-## What Growth Engine Does
+## What I Built
 
-Growth Engine is a Next.js app powered by the **Claude Agent SDK**. You give it two things:
+**Growth Engine** is a Next.js app powered by the Claude Agent SDK. You give it two inputs:
 
-1. **Your OpenAPI spec** — the source of truth for what your API does
+1. **Your OpenAPI spec** — validated with swagger-parser, so the agent knows exactly what your API does
 2. **A target company URL** — who you want to sell to
 
-Claude takes it from there:
+The agent handles everything else: deep company research via WebSearch + WebFetch, pain point identification through Claude's reasoning, tech stack detection, brand asset discovery, and competitive context analysis. Every action is a real Anthropic API call — no templates, no mail-merge.
 
-- **Researches the target** — visits their site, reads their copy, identifies their tech stack, maps their pain points
-- **Generates a complete outreach suite:**
-  - A **cold email** under 4 sentences, personalized to their specific problems
-  - A **branded demo page** with their logo, a "make your first API call" walkthrough, and pain-point-to-endpoint mapping
-  - A **value proposition** that connects your endpoints to their needs
-  - A **LinkedIn message** for the decision maker
-- **Scores and ranks your leads** — tracks demo page engagement (time on page, interactions, feedback) and surfaces the hottest prospects at the top of your sheet
-- **Tells you when to follow up** — engagement signals drive re-engagement timing recommendations
+### What comes out
 
-Every action flows through the Anthropic API via the Claude Agent SDK. The tracking layer writes to Google Sheets via MCP — no database, no analytics platform, just a spreadsheet you can share with your co-founder.
+A complete, personalized outreach suite:
 
-## Why This Matters for YC Founders
+- **Cold email** — under 4 sentences, referencing the target's specific pain points and the exact endpoints that solve them
+- **Branded demo page** — their company name and logo, before/after story blocks showing current pain points vs. API solutions, an interactive API playground with 5 language tabs (cURL, Python, Node.js, Go, Ruby), and a chat widget for questions
+- **Value proposition** — a structured breakdown of which API capabilities map to which business problems, with endpoint badges
+- **LinkedIn message** — short, specific, referencing something real about their company
 
-### Time to value is everything
+### How engagement turns into pipeline
 
-YC partners evaluate traction. Investors want to see pipeline. The faster you can show that real companies are engaging with your product, the stronger your story.
+Every interaction on the demo page feeds into a lead scoring engine:
 
-Growth Engine compresses what used to take a full-time SDR a week into a 3-minute automated workflow. You paste your spec, pick your targets, and the agent does the rest.
+| Signal | Score | What it means |
+|--------|-------|---------------|
+| Demo page viewed | +10 | Curiosity |
+| Time on page > 2 min | +15 | Reading, not bouncing |
+| API playground interaction | +20 | Evaluating technical fit |
+| Language snippet copied | +25 | "I'm going to try this" |
+| Chat question asked | +25 | Active buying signal |
+| Feedback submitted | +30 | Telling you their problems |
 
-### Personalization at scale without the headcount
+Repeat engagement gets a bonus. Language preferences are tracked ("this prospect uses Python"). The scoring algorithm produces a temperature rating:
 
-The demo pages aren't generic. Each target company gets their own branded page with:
-- Their company name and logo
-- A walkthrough of the 2-3 endpoints most relevant to their pain points
-- An interactive "try your first API call" experience
-- A feedback survey that captures their biggest challenges
+- 🔥 **Hot** (80+): "Schedule a call today — they copied the Python snippet and asked about team pricing"
+- 🟡 **Warm** (40-79): "Send the case study in 2 days"
+- ❄️ **Cold** (<40): "Re-engage next week with new content"
 
-When a prospect spends 4 minutes on their demo page, interacts with the API playground, and submits feedback — they shoot to the top of your lead list as **highly engaged**. The sheet tells you exactly when to reach out.
+The tracking page shows all of this in real-time with auto-refresh, and you can export to CSV at any time.
 
-### Agentic workflows > manual hustle
+## Technical Decisions
 
-The Claude Agent SDK gives the agent real tools: web search, web fetch, file operations, and MCP server connections. It's not a prompt-and-pray chatbot — it's an autonomous research agent that does genuine work.
+### Why the Claude Agent SDK
 
-The agent:
-1. Searches the web for the target company
-2. Fetches and analyzes their website
-3. Cross-references their pain points against your API endpoints
-4. Generates artifacts with structured output
-5. Logs everything to Sheets via MCP
+The agent needs to do real work: search the web, read websites, reason about what it finds, generate structured output, and optionally write to external services. The Claude Agent SDK provides this as a single `query()` call with tool access baked in:
 
-Every step is an API call. Every API call is Anthropic revenue. The more founders use this, the more the platform grows.
+```typescript
+for await (const message of query({
+  prompt: buildAgentPrompt(spec, targetUrl),
+  options: {
+    allowedTools: ['WebSearch', 'WebFetch', 'mcp__google-sheets__*'],
+    maxTurns: 10,
+    mcpServers: sheetsConfig,
+  },
+})) {
+  // Stream real-time progress to the UI
+  emit(extractProgress(message));
+}
+```
+
+Each tool call becomes a live progress step in the UI — "Searching: WorkOS pricing", "Reading: workos.com/docs", "Analyzing pain points". The user watches the agent work in real-time via SSE streaming, not a fake loading spinner.
+
+### Why MCP for Google Sheets
+
+The tracking data needs to be shareable, exportable, and accessible without a database. Google Sheets via MCP fits perfectly:
+
+- **During analysis**: the agent writes lead data to a "Leads" tab as part of its workflow
+- **During demo page usage**: the `/api/track` endpoint writes engagement events to an "Activity" tab via the Sheets API
+- **For the founder**: it's a spreadsheet they already know how to use, share with co-founders, and sort/filter
+
+The app works with or without Sheets configured — in-memory storage handles everything locally, with CSV export always available.
+
+### SSE streaming for real progress
+
+The biggest UX improvement was replacing fake loading timers with real agent progress. The `/api/analyze` endpoint returns a Server-Sent Events stream:
+
+```
+event: progress
+data: {"step": "Searching: WorkOS enterprise auth pricing"}
+
+event: progress
+data: {"step": "Reading: workos.com/docs/directory-sync"}
+
+event: progress
+data: {"step": "Analyzing pain points and use cases..."}
+
+event: progress
+data: {"step": "Assembling outreach suite..."}
+
+event: result
+data: { ... full analysis result ... }
+```
+
+The target page consumes this stream and renders each step as it arrives — with elapsed time between steps, contextual icons, and a running timer. Every step represents real agent work.
+
+### Demo page as a conversion instrument
+
+The generated demo pages aren't just content — they're instrumented sales tools. Every interaction fires a tracking event:
+
+- **Language tab selection** → "This prospect is a Python shop"
+- **Snippet copy** → "They're going to try the API"
+- **Time on page** → engagement depth
+- **Chat widget questions** → buying signals with exact text
+- **Feedback survey** → their priorities in their own words
+
+Each signal feeds the lead scoring engine. A founder checking their tracking page at the end of the day sees a ranked list of prospects with specific next actions — not a generic CRM dashboard.
 
 ## The Architecture
 
 ```
-OpenAPI Spec + Target URL
-        ↓
-  Claude Agent SDK
-  ├── WebSearch (research target)
-  ├── WebFetch (scrape their site)
-  └── MCP: google-sheets (tracking)
-        ↓
-  Outreach Suite
-  ├── Cold email
-  ├── Branded demo page
-  ├── Value proposition
-  └── LinkedIn message
-        ↓
-  Lead Scoring Sheet
-  ├── Engagement signals
-  ├── Lead temperature (🔥 hot → ❄️ cold)
-  └── Re-engagement timing
+┌──────────────────────────────────────────────┐
+│  Upload Page                                  │
+│  Paste OpenAPI spec → swagger-parser → valid  │
+└──────────────────┬───────────────────────────┘
+                   ↓
+┌──────────────────────────────────────────────┐
+│  Target Page                                  │
+│  Enter company URL → SSE stream → progress UI │
+└──────────────────┬───────────────────────────┘
+                   ↓
+┌──────────────────────────────────────────────┐
+│  Claude Agent SDK                             │
+│  ├── WebSearch (company research)             │
+│  ├── WebFetch (site analysis)                 │
+│  └── MCP: google-sheets (lead logging)        │
+└──────────────────┬───────────────────────────┘
+                   ↓
+┌──────────────────────────────────────────────┐
+│  Results Page                                 │
+│  Cold email · Demo page · Value prop · LinkedIn│
+└──────────────────┬───────────────────────────┘
+                   ↓
+┌──────────────┐  ┌────────────────────────────┐
+│  Demo Page    │→│  Tracking Page              │
+│  (per-target) │  │  Lead scores · Activity feed│
+│  Instrumented │  │  CSV export · Auto-refresh  │
+└──────────────┘  └────────────────────────────┘
 ```
 
-**Tech stack:** Next.js, TypeScript, Claude Agent SDK, Google Sheets MCP, Resend.
+**Stack:** Next.js 16, TypeScript, Claude Agent SDK, swagger-parser, Google Sheets MCP, Tailwind CSS.
 
-## Lead Scoring: How It Works
+## What I'd Build Next
 
-Not all prospects are equal. Growth Engine automatically ranks leads based on real engagement signals:
-
-| Signal | Weight | What It Means |
-|--------|--------|---------------|
-| Demo page opened | Low | Curiosity — they clicked |
-| Time on page > 2 min | Medium | Interest — they're reading |
-| API playground interaction | High | Intent — they're trying it |
-| Feedback survey submitted | Very High | Engaged — they told you their problems |
-| Multiple visits | Very High | Returning — they're evaluating |
-
-The Google Sheet auto-sorts by engagement score. The hottest leads float to the top. A "next action" column tells you when and how to follow up:
-
-- 🔥 **Hot** (score > 80): "Follow up today — they spent 4 min on the demo and tried 3 endpoints"
-- 🟡 **Warm** (score 40-80): "Send the case study in 2 days"
-- ❄️ **Cold** (score < 40): "Re-engage in a week with new content"
+- **Resend integration** — one-click to send the cold email directly from the results page
+- **Multi-target campaigns** — paste a list of 10 companies, get 10 outreach suites in parallel
+- **CRM sync** — push scored leads to HubSpot or Salesforce
+- **Slack/email notifications** — "🔥 WorkOS just spent 6 minutes on your demo page and asked about team pricing"
+- **A/B test outreach variants** — generate multiple email angles per target, track which converts
 
 ## Try It
 
@@ -115,19 +170,12 @@ echo 'ANTHROPIC_API_KEY=your-key' > .env.local
 pnpm dev
 ```
 
-Open `localhost:3000`. Paste any OpenAPI spec — there's a sample PayFlow API in `examples/` if you want to test. Pick a target company. Watch Claude work.
+Open `localhost:3000`. Paste any OpenAPI spec (there's a sample PayFlow API in `examples/`). Pick a target company. Watch Claude work.
 
 **Time to first outreach: under 3 minutes.**
 
-## What's Next
-
-- **Resend integration** — one click to send the cold email directly
-- **Multi-target campaigns** — paste a list of 10 companies, get 10 outreach suites
-- **CRM sync** — push scored leads to HubSpot/Salesforce
-- **Slack notifications** — "🔥 Acme Corp just spent 6 minutes on your demo page"
+[DEMO VIDEO EMBED HERE]
 
 ---
 
 *Built by [Zack Proser](https://zackproser.com). Powered by the Claude Agent SDK.*
-
-*Got an API? [Try it now](https://github.com/zackproser/claude-growth-engine).*
