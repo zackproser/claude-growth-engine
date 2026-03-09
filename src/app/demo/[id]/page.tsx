@@ -176,20 +176,20 @@ export default function DemoPage() {
                   )}
                   
                   <div className="grid md:grid-cols-2 gap-4">
-                    {/* Before */}
-                    <div className="bg-red-50 rounded-xl border border-red-100 p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="w-6 h-6 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-xs font-bold">✗</span>
-                        <span className="text-xs font-semibold text-red-500 uppercase tracking-wider">Before</span>
+                    {/* Before — Current Pain Point */}
+                    <div className="bg-red-50 rounded-xl border border-red-200 p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">🩸</span>
+                        <span className="text-sm font-bold text-red-600 uppercase tracking-wide">Current Pain Point</span>
                       </div>
                       <p className="text-slate-700 text-sm leading-relaxed">{block.painPoint}</p>
                     </div>
 
-                    {/* After */}
-                    <div className="bg-green-50 rounded-xl border border-green-100 p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">✓</span>
-                        <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">After</span>
+                    {/* After — With API */}
+                    <div className="bg-green-50 rounded-xl border border-green-200 p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">✅</span>
+                        <span className="text-sm font-bold text-green-700 uppercase tracking-wide">With {spec.name}</span>
                       </div>
                       <p className="text-slate-700 text-sm leading-relaxed">{block.solution}</p>
                     </div>
