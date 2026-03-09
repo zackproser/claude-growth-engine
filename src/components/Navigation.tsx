@@ -8,6 +8,7 @@ const navLinks = [
   { href: '/upload', label: 'Upload Spec' },
   { href: '/target', label: 'Target' },
   { href: '/results', label: 'Results' },
+  { href: '/tracking', label: '📊 Tracking' },
 ];
 
 export default function Navigation() {
