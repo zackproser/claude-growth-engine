@@ -9,12 +9,19 @@ module.exports = {
     extend: {
       colors: {
         'primary': '#D97757',
-        'dark': '#1A1A2E', 
-        'dark-alt': '#191A23',
-        'light': '#F5E6D3',
+        'dark': '#1A1A1A',
+        'dark-alt': '#2A2A2A',
+        'light': '#FAF7F2',
+        'light-alt': '#F0EBE3',
         'text-light': '#FAFAF9',
-        'text-dark': '#1A1A2E', 
+        'text-dark': '#1A1A1A',
+        'text-muted': '#6B6560',
         'accent': '#E8C547',
+        'cream': '#FAF7F2',
+        'warm-gray': '#E8E2D9',
+        'anthropic-bg': '#FAF7F2',
+        'anthropic-card': '#FFFFFF',
+        'anthropic-border': '#E8E2D9',
       },
       fontFamily: {
         'geist-sans': ['var(--font-geist-sans)', 'Arial', 'sans-serif'],

@@ -226,7 +226,7 @@ export default function DemoPage() {
           <section className="py-14 border-b border-slate-200">
             <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-8 border border-orange-100">
               <h2 className="text-2xl font-bold text-slate-900 mb-4">Why {spec.name}?</h2>
-              <div className="prose prose-slate prose-sm max-w-none">
+              <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-900 prose-strong:text-slate-800 prose-a:text-orange-600">
                 <ReactMarkdown>{valueProp.content}</ReactMarkdown>
               </div>
             </div>
