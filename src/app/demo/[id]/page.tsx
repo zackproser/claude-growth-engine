@@ -115,7 +115,7 @@ function parseValueProp(content: string): ParsedCard[] {
     let body = '';
 
     // Try: text up to first period that's followed by more content
-    const periodMatch = text.match(/^(.{20,80}?\.)\s+(.+)/s);
+    const periodMatch = text.match(/^(.{20,80}?\.)\s+([\s\S]+)/);
     if (periodMatch) {
       headline = periodMatch[1];
       body = periodMatch[2];
