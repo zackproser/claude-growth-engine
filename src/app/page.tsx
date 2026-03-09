@@ -86,12 +86,13 @@ export default function HomePage() {
             <p className="text-neutral-500">Every action flows through the Anthropic API via Claude Agent SDK.</p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-1">
+          <div className="grid md:grid-cols-5 gap-1">
             {[
               { step: '01', icon: '📄', title: 'Upload spec', desc: 'Paste your OpenAPI spec — validated with swagger-parser' },
               { step: '02', icon: '🎯', title: 'Pick target', desc: 'Enter any company URL. Claude researches them automatically.' },
               { step: '03', icon: '⚡', title: 'Agent works', desc: 'WebSearch + WebFetch find their pain points, logo, tech stack.' },
               { step: '04', icon: '🚀', title: 'Growth suite', desc: 'Cold email, demo page, value prop, LinkedIn — ready to use.' },
+              { step: '05', icon: '📊', title: 'Track & close', desc: 'Every click, copy, and question logged to Google Sheets for follow-up.' },
             ].map((item) => (
               <div key={item.step} className="bg-dark-alt/50 border border-neutral-800 p-6 first:rounded-l-xl last:rounded-r-xl">
                 <div className="text-xs text-primary font-mono mb-3">{item.step}</div>
