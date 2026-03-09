@@ -5,6 +5,106 @@ import { useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import type { AnalysisResult } from '@/lib/types';
 
+const VALUE_PROP_EMOJIS = ['💰', '🔄', '🛒', '🔔', '📊', '⚡', '🔐', '📈', '🎯', '🚀'];
+
+function ValuePropCards({ content }: { content: string }) {
+  // Split content into sections by line breaks + keyword patterns
+  // Each section becomes a scannable card
+  const sections = content
+    .split(/\n(?=[A-Z]|\d+\.)/)
+    .map(s => s.trim())
+    .filter(s => s.length > 20);
+
+  if (sections.length <= 1) {
+    // Fallback: split by sentences for flat text
+    const sentences = content
+      .split(/(?<=[.!])\s+(?=[A-Z])/)
+      .filter(s => s.trim().length > 15);
+
+    if (sentences.length <= 2) {
+      // Very short — just render as styled prose
+      return (
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-8 border border-orange-100">
+          <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-900 prose-strong:text-slate-800">
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
+        </div>
+      );
+    }
+
+    // Medium length — render as bullet cards
+    return (
+      <div className="grid md:grid-cols-2 gap-3">
+        {sentences.map((sentence, i) => {
+          // Try to extract a headline from the first phrase
+          const colonSplit = sentence.indexOf('→');
+          const headline = colonSplit > 0 ? sentence.slice(0, colonSplit).trim() : null;
+          const body = colonSplit > 0 ? sentence.slice(colonSplit + 1).trim() : sentence;
+
+          return (
+            <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition-all">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl flex-shrink-0">{VALUE_PROP_EMOJIS[i % VALUE_PROP_EMOJIS.length]}</span>
+                <div>
+                  {headline && (
+                    <h3 className="text-sm font-bold text-slate-900 mb-1">{headline}</h3>
+                  )}
+                  <p className="text-sm text-slate-600 leading-relaxed">{body}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Multiple sections — render as cards
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      {sections.map((section, i) => {
+        // Extract headline (first line or up to first period/colon)
+        const lines = section.split('\n');
+        const firstLine = lines[0].replace(/^#+\s*/, '').replace(/^\d+\.\s*/, '');
+        const rest = lines.slice(1).join('\n').trim() || (firstLine.length > 80 ? '' : '');
+        
+        // If first line is short, use as headline; otherwise split at arrow/colon
+        let headline = firstLine;
+        let body = rest;
+        
+        const arrowIdx = firstLine.indexOf('→');
+        const colonIdx = firstLine.indexOf(':');
+        const splitIdx = arrowIdx > 0 ? arrowIdx : (colonIdx > 0 && colonIdx < 60) ? colonIdx : -1;
+        
+        if (splitIdx > 0 && !rest) {
+          headline = firstLine.slice(0, splitIdx).trim();
+          body = firstLine.slice(splitIdx + 1).trim() + (rest ? '\n' + rest : '');
+        }
+
+        // Extract endpoint if present
+        const endpointMatch = section.match(/(GET|POST|PUT|DELETE|PATCH)\s+(\/\S+)/);
+
+        return (
+          <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition-all">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0 mt-0.5">{VALUE_PROP_EMOJIS[i % VALUE_PROP_EMOJIS.length]}</span>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-slate-900 mb-1.5">{headline}</h3>
+                {endpointMatch && (
+                  <code className="text-xs bg-slate-100 text-orange-600 px-2 py-0.5 rounded font-mono mb-2 inline-block">
+                    {endpointMatch[1]} {endpointMatch[2]}
+                  </code>
+                )}
+                <p className="text-sm text-slate-600 leading-relaxed">{body || headline}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DemoPage() {
   const params = useParams();
   const id = params.id as string;
@@ -224,12 +324,11 @@ export default function DemoPage() {
         {/* Value Prop */}
         {valueProp && (
           <section className="py-14 border-b border-slate-200">
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-8 border border-orange-100">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Why {spec.name}?</h2>
-              <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-900 prose-strong:text-slate-800 prose-a:text-orange-600">
-                <ReactMarkdown>{valueProp.content}</ReactMarkdown>
-              </div>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Why {spec.name}?</h2>
+              <p className="text-slate-500">How each capability maps to your specific needs</p>
             </div>
+            <ValuePropCards content={valueProp.content} />
           </section>
         )}
 
