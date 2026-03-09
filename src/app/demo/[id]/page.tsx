@@ -13,109 +13,160 @@ interface ParsedCard {
   endpoint?: string;
 }
 
+/**
+ * Clean markdown artifacts, backticks, stray formatting from agent text.
+ */
+function cleanMarkdown(text: string): string {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')   // **bold** → bold
+    .replace(/\*([^*]+)\*/g, '$1')        // *italic* → italic
+    .replace(/`([^`]+)`/g, '$1')          // `code` → code
+    .replace(/^#+\s*/gm, '')              // ## headers → text
+    .replace(/^\d+\.\s*/gm, '')           // 1. numbered → text
+    .replace(/^[-•]\s*/gm, '')            // - bullets → text
+    .replace(/\s+/g, ' ')                 // collapse whitespace
+    .trim();
+}
+
 function parseValueProp(content: string): ParsedCard[] {
-  // Strategy: split on arrows (→) which the agent uses to separate capabilities.
-  // Each chunk between arrows becomes a card.
-  // Also handle: newline-separated paragraphs, numbered lists, markdown headers.
+  // Step 1: Clean ALL markdown from the content
+  const clean = cleanMarkdown(content);
 
-  let chunks: string[] = [];
+  // Step 2: Remove curl examples and "Make your first API call" CTAs
+  const stripped = clean
+    .replace(/Make your first API call[^.]*\./gi, '')
+    .replace(/curl\s+-[^.]+\./g, '')
+    .replace(/curl\s+https?:\/\/\S+[^.]*/g, '')
+    .replace(/https?:\/\/api\.\S+/g, '')
+    .trim();
 
-  // First try: split on → that appears mid-text (agent uses these as section separators)
-  const arrowChunks = content.split(/\s*→\s*/);
-  if (arrowChunks.length >= 3) {
-    chunks = arrowChunks.map(c => c.trim()).filter(c => c.length > 15);
-  } else {
-    // Fallback: split on double newlines or newline + capital letter
-    chunks = content
-      .split(/\n\n+|\n(?=[A-Z][a-z]+ )/)
-      .map(c => c.trim())
-      .filter(c => c.length > 20);
+  // Step 3: Extract all endpoints FIRST (before splitting destroys context)
+  const allEndpoints = [...stripped.matchAll(/(GET|POST|PUT|DELETE|PATCH)\s+(\/[\w/{}\-]+)/g)];
+
+  // Step 4: Split into sections. Try multiple strategies:
+  // A) Numbered pain points: "1. "All my revenue..." → "2. "I need..."
+  // B) Arrow separators: → between sections
+  // C) Double newlines
+  // D) Sentence boundaries
+
+  let sections: string[] = [];
+
+  // Strategy A: Numbered items like '1. "Pain point"' or 'Pain Point → Endpoint'
+  const numberedPattern = /(?:^|\n)\d+\.\s*"[^"]+"/g;
+  const numberedMatches = stripped.match(numberedPattern);
+
+  if (numberedMatches && numberedMatches.length >= 3) {
+    // Split around numbered pain points — each becomes a section with its solution
+    const indices: number[] = [];
+    let searchFrom = 0;
+    for (const m of numberedMatches) {
+      const idx = stripped.indexOf(m.trim(), searchFrom);
+      if (idx >= 0) { indices.push(idx); searchFrom = idx + 1; }
+    }
+    for (let i = 0; i < indices.length; i++) {
+      const start = indices[i];
+      const end = i + 1 < indices.length ? indices[i + 1] : stripped.length;
+      sections.push(stripped.slice(start, end).trim());
+    }
+    // Also grab the intro before the first number
+    if (indices[0] > 30) {
+      sections.unshift(stripped.slice(0, indices[0]).trim());
+    }
   }
 
-  // If still just one chunk, split on sentences
-  if (chunks.length <= 1) {
-    chunks = content
+  // Strategy B: Arrow-separated
+  if (sections.length < 3) {
+    const arrowParts = stripped.split(/\s*→\s*/);
+    if (arrowParts.length >= 4) {
+      sections = arrowParts.filter(s => s.length > 20);
+    }
+  }
+
+  // Strategy C: Sentence-based (last resort)
+  if (sections.length < 3) {
+    sections = stripped
       .split(/(?<=\.)\s+(?=[A-Z])/)
-      .filter(c => c.trim().length > 30);
+      .filter(s => s.length > 30);
   }
 
-  // Remove the "Make your first API call" CTA line and curl examples
-  chunks = chunks.filter(c =>
-    !c.match(/^Make your first API call/i) &&
-    !c.match(/^curl\s/) &&
-    !c.match(/^https?:\/\/api\./)
-  );
-
+  // Step 5: Build cards from sections
   const cards: ParsedCard[] = [];
 
-  for (const chunk of chunks) {
-    // Extract ALL endpoints from this chunk
-    const endpoints = [...chunk.matchAll(/(GET|POST|PUT|DELETE|PATCH)\s+(\/\S+)/g)];
-    const endpoint = endpoints.length > 0
-      ? endpoints.map(m => `${m[1]} ${m[2]}`).join(' + ')
+  for (const section of sections) {
+    // Find endpoints in this section
+    const sectionEndpoints = [...section.matchAll(/(GET|POST|PUT|DELETE|PATCH)\s+(\/[\w/{}\-]+)/g)];
+    const endpoint = sectionEndpoints.length > 0
+      ? sectionEndpoints.map(m => `${m[1]} ${m[2]}`).join(' + ')
       : undefined;
 
-    // Strip endpoints and curl commands from the display text
-    let text = chunk
-      .replace(/(GET|POST|PUT|DELETE|PATCH)\s+\/\S+/g, '')
-      .replace(/\+\s*\+/g, '')
-      .replace(/curl\s+.*$/gm, '')
-      .replace(/https?:\/\/api\.\S+/g, '')
+    // Remove endpoints from display text
+    let text = section
+      .replace(/(GET|POST|PUT|DELETE|PATCH)\s+\/[\w/{}\-]+/g, '')
+      .replace(/\+\s*\+/g, ' ')
+      .replace(/^\s*[+,→]\s*/, '')
       .trim();
 
-    // Extract headline: first sentence, capped at 60 chars
-    let headline = '';
-    let body = text;
+    // Skip very short or CTA-like sections
+    if (text.length < 20) continue;
+    if (/^Make your first/i.test(text)) continue;
 
-    // Try first sentence (up to first period followed by space+capital)
-    const sentenceEnd = text.match(/^(.{15,80}?[.!])\s+(?=[A-Z])/);
-    if (sentenceEnd) {
-      headline = sentenceEnd[1];
-      body = text.slice(headline.length).trim();
+    // Extract headline: first meaningful sentence, max 80 chars
+    let headline = '';
+    let body = '';
+
+    // Try: text up to first period that's followed by more content
+    const periodMatch = text.match(/^(.{20,80}?\.)\s+(.+)/s);
+    if (periodMatch) {
+      headline = periodMatch[1];
+      body = periodMatch[2];
     } else if (text.length <= 80) {
       headline = text;
       body = '';
     } else {
-      // Force break at comma, em-dash, or word boundary
-      const breaks = [
-        text.indexOf(',', 15),
-        text.indexOf('—', 15),
-        text.indexOf(' — ', 15),
-      ].filter(i => i > 10 && i < 70);
-
-      if (breaks.length > 0) {
-        const breakAt = Math.min(...breaks);
-        headline = text.slice(0, breakAt).trim();
-        body = text.slice(breakAt + 1).trim().replace(/^—?\s*/, '');
-      } else {
-        const spaceAt = text.lastIndexOf(' ', 60);
-        headline = text.slice(0, spaceAt > 20 ? spaceAt : 60).trim();
-        body = text.slice(headline.length).trim();
-      }
+      // Break at em-dash, comma, or word boundary
+      const dashIdx = text.indexOf(' — ');
+      const commaIdx = text.indexOf(', ', 20);
+      const breakAt = dashIdx > 15 && dashIdx < 70 ? dashIdx :
+                      commaIdx > 15 && commaIdx < 70 ? commaIdx :
+                      text.lastIndexOf(' ', 65);
+      headline = text.slice(0, breakAt > 15 ? breakAt : 65).trim();
+      body = text.slice(headline.length).replace(/^[\s,—]+/, '').trim();
     }
 
-    // Clean up stray punctuation
-    headline = headline.replace(/^[→\-•]\s*/, '').replace(/[,:;]$/, '').trim();
-    body = body.replace(/^[→\-•,]\s*/, '').trim();
+    // Clean stray leading punctuation
+    headline = headline.replace(/^[→\-•"'\s]+/, '').replace(/["']$/, '').trim();
+    body = body.replace(/^[→\-•"',\s]+/, '').trim();
 
-    // Never duplicate
+    // Don't duplicate
     if (body.startsWith(headline)) {
       body = body.slice(headline.length).replace(/^[.:,—\s]+/, '').trim();
     }
 
-    // Truncate body at ~200 chars for scannability
-    if (body.length > 200) {
-      const cutAt = body.lastIndexOf('.', 200);
-      body = body.slice(0, cutAt > 100 ? cutAt + 1 : 200).trim();
+    // Truncate body
+    if (body.length > 220) {
+      const cut = body.lastIndexOf('.', 220);
+      body = body.slice(0, cut > 80 ? cut + 1 : 220).trim();
       if (!body.endsWith('.')) body += '…';
     }
 
-    if (headline.length >= 10) {
+    // Remove stray numbered prefixes from headline
+    headline = headline.replace(/^\d+\.\s*/, '');
+
+    if (headline.length >= 12) {
       cards.push({ headline, body, endpoint });
     }
   }
 
-  return cards;
+  // Dedupe cards with very similar headlines
+  const unique: ParsedCard[] = [];
+  for (const card of cards) {
+    const isDupe = unique.some(u =>
+      u.headline.slice(0, 30) === card.headline.slice(0, 30)
+    );
+    if (!isDupe) unique.push(card);
+  }
+
+  return unique;
 }
 
 function ValuePropCards({ content }: { content: string }) {
@@ -143,7 +194,7 @@ function ValuePropCards({ content }: { content: string }) {
               <h3 className="text-sm font-bold text-slate-900 mb-1.5 leading-snug">{card.headline}</h3>
               {card.endpoint && (
                 <code className="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-mono mb-2 inline-block">
-                  {card.endpoint}
+                  {card.endpoint.replace(/`/g, '')}
                 </code>
               )}
               {card.body && (
