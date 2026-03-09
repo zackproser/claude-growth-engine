@@ -17,6 +17,7 @@ export default function DemoPage() {
   const [chatMessages, setChatMessages] = useState<Array<{ from: string; text: string }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [selectedLang, setSelectedLang] = useState('curl');
+  const [copied, setCopied] = useState(false);
   const [startTime] = useState(Date.now());
 
   useEffect(() => {
@@ -301,9 +302,15 @@ export default function DemoPage() {
                         onClick={() => {
                           navigator.clipboard.writeText(langs[selectedLang].code);
                           trackEvent('lang_selected', { language: selectedLang, endpoint: ep.path });
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
                         }}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                        📋 Copy Snippet
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          copied
+                            ? 'bg-green-500 text-white scale-105'
+                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                        }`}>
+                        {copied ? '✓ Copied!' : '📋 Copy Snippet'}
                       </button>
                       <button className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Get API Key →
