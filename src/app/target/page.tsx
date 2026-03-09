@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -20,14 +20,46 @@ interface ParsedSpec {
   endpoints: EndpointInfo[];
 }
 
+interface ProgressStep {
+  step: string;
+  detail?: string;
+  done?: boolean;
+  timestamp: number;
+}
+
+const STEP_ICONS: Record<string, string> = {
+  web_search: '🔍',
+  web_fetch: '🌐',
+  sheets_write: '📊',
+  analyzing: '🧠',
+  branding: '🎨',
+  generating: '⚙️',
+};
+
+function getStepIcon(step: string): string {
+  for (const [key, icon] of Object.entries(STEP_ICONS)) {
+    if (step.toLowerCase().includes(key.replace('_', ''))) return icon;
+  }
+  if (step.toLowerCase().includes('search')) return '🔍';
+  if (step.toLowerCase().includes('read') || step.toLowerCase().includes('fetch')) return '🌐';
+  if (step.toLowerCase().includes('sheet') || step.toLowerCase().includes('track')) return '📊';
+  if (step.toLowerCase().includes('done') || step.toLowerCase().includes('complete')) return '✅';
+  if (step.toLowerCase().includes('initial') || step.toLowerCase().includes('connect')) return '🚀';
+  if (step.toLowerCase().includes('pars')) return '📋';
+  return '⚡';
+}
+
 export default function TargetPage() {
   const [companyUrl, setCompanyUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
-  const [statusMessages, setStatusMessages] = useState<string[]>([]);
+  const [steps, setSteps] = useState<ProgressStep[]>([]);
   const [parsedSpec, setParsedSpec] = useState<ParsedSpec | null>(null);
   const [rawSpec, setRawSpec] = useState('');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const router = useRouter();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const stepsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('openapi-spec');
@@ -44,41 +76,30 @@ export default function TargetPage() {
     }
   }, [router]);
 
+  // Auto-scroll steps
+  useEffect(() => {
+    stepsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [steps]);
+
+  // Elapsed timer
+  useEffect(() => {
+    if (isAnalyzing) {
+      setElapsedSeconds(0);
+      timerRef.current = setInterval(() => setElapsedSeconds(s => s + 1), 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [isAnalyzing]);
+
   const handleAnalyze = async () => {
     if (!companyUrl.trim()) return;
 
     setIsAnalyzing(true);
     setError('');
-    setStatusMessages(['Connecting to Claude Agent SDK...']);
+    setSteps([{ step: 'Connecting to Claude Agent SDK...', timestamp: Date.now() }]);
 
-    // Normalize URL
     const normalizedUrl = companyUrl.startsWith('http') ? companyUrl : `https://${companyUrl}`;
-
-    // Progressive status updates — decomposed into real phases
-    const phases = [
-      { msg: 'Initializing Claude Agent SDK...', delay: 0 },
-      { msg: 'WebSearch: looking up company info...', delay: 2000 },
-      { msg: 'WebFetch: reading company website...', delay: 5000 },
-      { msg: 'Analyzing business model and tech stack...', delay: 9000 },
-      { msg: 'Identifying pain points and use cases...', delay: 13000 },
-      { msg: 'Searching for company logo and branding...', delay: 17000 },
-      { msg: 'Mapping API endpoints to pain points...', delay: 21000 },
-      { msg: 'Generating cold email (<4 lines)...', delay: 26000 },
-      { msg: 'Generating value proposition...', delay: 30000 },
-      { msg: 'Building personalized demo page...', delay: 35000 },
-      { msg: 'Crafting LinkedIn message...', delay: 40000 },
-      { msg: 'Computing lead score signals...', delay: 44000 },
-      { msg: 'Assembling outreach suite...', delay: 48000 },
-    ];
-
-    const timeouts: NodeJS.Timeout[] = [];
-    phases.forEach(({ msg, delay }) => {
-      timeouts.push(setTimeout(() => {
-        setStatusMessages(prev => [...prev, msg]);
-      }, delay));
-    });
-
-    const statusInterval = { current: timeouts };
 
     try {
       const res = await fetch('/api/analyze', {
@@ -87,26 +108,82 @@ export default function TargetPage() {
         body: JSON.stringify({
           rawSpec,
           targetUrl: normalizedUrl,
+          stream: true,
         }),
       });
 
-      statusInterval.current.forEach(t => clearTimeout(t));
-
-      const data = await res.json();
-
       if (!res.ok) {
+        const data = await res.json();
         setError(data.error || 'Analysis failed');
         setIsAnalyzing(false);
         return;
       }
 
-      // Store result for the results page
-      localStorage.setItem('latest-result', JSON.stringify(data));
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
 
-      // Navigate to results
-      router.push(`/results?id=${data.id}`);
+      if (!reader) {
+        setError('Streaming not supported');
+        setIsAnalyzing(false);
+        return;
+      }
+
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        let currentEvent = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            try {
+              const parsed = JSON.parse(data);
+
+              if (currentEvent === 'progress') {
+                setSteps(prev => [...prev, {
+                  step: parsed.detail || parsed.step,
+                  detail: parsed.detail,
+                  done: parsed.done,
+                  timestamp: Date.now(),
+                }]);
+              } else if (currentEvent === 'result') {
+                // Store result and navigate
+                localStorage.setItem('latest-result', JSON.stringify(parsed));
+                setSteps(prev => [...prev, {
+                  step: '✅ Outreach suite ready — redirecting...',
+                  done: true,
+                  timestamp: Date.now(),
+                }]);
+                setTimeout(() => router.push(`/results?id=${parsed.id}`), 800);
+                return;
+              } else if (currentEvent === 'error') {
+                setError(parsed.error || 'Analysis failed');
+                setIsAnalyzing(false);
+                return;
+              }
+            } catch {
+              // Skip unparseable lines
+            }
+          }
+        }
+      }
+
+      // If we get here without a result event, something went wrong
+      if (!error) {
+        setError('Stream ended without a result');
+        setIsAnalyzing(false);
+      }
     } catch (err) {
-      statusInterval.current.forEach(t => clearTimeout(t));
       setError(err instanceof Error ? err.message : 'Failed to analyze target');
       setIsAnalyzing(false);
     }
@@ -128,7 +205,7 @@ export default function TargetPage() {
           <div className="mb-8">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <h2 className="text-2xl font-semibold text-text-light mb-2">Claude Agent is Working</h2>
-            <p className="text-neutral-400 text-sm mb-2">
+            <p className="text-neutral-400 text-sm mb-1">
               Targeting: <span className="text-primary">{companyUrl}</span>
             </p>
             <p className="text-neutral-400 text-sm">
@@ -136,23 +213,39 @@ export default function TargetPage() {
             </p>
           </div>
 
-          <div className="space-y-2 text-left bg-dark-alt rounded-lg p-6 border border-neutral-700">
-            {statusMessages.map((msg, i) => (
-              <div key={i} className="flex items-start space-x-3">
-                <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${
-                  i === statusMessages.length - 1 ? 'bg-primary animate-pulse' : 'bg-green-500'
-                }`}></div>
-                <span className={`text-sm ${
-                  i === statusMessages.length - 1 ? 'text-text-light' : 'text-neutral-500'
-                }`}>
-                  {i < statusMessages.length - 1 ? '✓ ' : ''}{msg}
-                </span>
-              </div>
-            ))}
+          <div className="bg-dark-alt rounded-lg p-6 border border-neutral-700 max-h-80 overflow-y-auto">
+            <div className="space-y-2 text-left">
+              {steps.map((s, i) => (
+                <div key={i} className="flex items-start space-x-3 animate-fadeIn">
+                  <span className="text-base flex-shrink-0 mt-0.5">
+                    {i < steps.length - 1 ? (
+                      <span className="text-green-400">✓</span>
+                    ) : s.done ? (
+                      <span className="text-green-400">✓</span>
+                    ) : (
+                      <span className="animate-pulse">{getStepIcon(s.step)}</span>
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm block ${
+                      i === steps.length - 1 && !s.done ? 'text-text-light font-medium' : 'text-neutral-500'
+                    }`}>
+                      {s.step}
+                    </span>
+                    {i < steps.length - 1 && steps[i + 1] && (
+                      <span className="text-xs text-neutral-600">
+                        {((steps[i + 1].timestamp - s.timestamp) / 1000).toFixed(1)}s
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div ref={stepsEndRef} />
+            </div>
           </div>
 
           <div className="flex items-center justify-center gap-4 text-neutral-500 text-xs mt-4">
-            <span>This typically takes 30-60 seconds</span>
+            <span className="font-mono tabular-nums">{elapsedSeconds}s elapsed</span>
             <span>•</span>
             <span>Every step is a real Anthropic API call</span>
           </div>

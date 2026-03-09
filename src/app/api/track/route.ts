@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { TrackingEvent } from '@/lib/types';
+import { logTrackingEvent, isSheetsConfigured } from '@/lib/sheets';
 
-// In-memory event store (would write to Google Sheets via MCP in production)
+// In-memory event store (always kept as fallback + fast reads)
 const events: TrackingEvent[] = [];
 
 export async function POST(request: NextRequest) {
@@ -10,11 +11,20 @@ export async function POST(request: NextRequest) {
     event.timestamp = new Date().toISOString();
     events.push(event);
 
-    // TODO: Write to Google Sheets via MCP when configured
-    // For now, log and store in memory
     console.log('[Track]', event.eventType, event.companyUrl, event.metadata);
 
-    return NextResponse.json({ success: true });
+    // Write to Google Sheets if configured
+    if (isSheetsConfigured()) {
+      // Fire and forget — don't block the response on Sheets write
+      logTrackingEvent(
+        event.resultId,
+        event.companyUrl,
+        event.eventType,
+        event.metadata
+      ).catch(err => console.error('[Track] Sheets write failed:', err));
+    }
+
+    return NextResponse.json({ success: true, sheetsEnabled: isSheetsConfigured() });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Tracking failed' },
@@ -24,5 +34,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ events });
+  return NextResponse.json({
+    events,
+    sheetsEnabled: isSheetsConfigured(),
+    count: events.length,
+  });
 }

@@ -20,6 +20,15 @@ module.exports = {
         'geist-sans': ['var(--font-geist-sans)', 'Arial', 'sans-serif'],
         'geist-mono': ['var(--font-geist-mono)', 'Courier', 'monospace'],
       },
+      animation: {
+        fadeIn: 'fadeIn 0.3s ease-in',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
     },
   },
   plugins: [],
