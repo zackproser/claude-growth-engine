@@ -50,34 +50,40 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleCopy}
-            className="text-xs bg-light-alt hover:bg-light-alt text-text-muted px-3 py-1.5 rounded-md transition-colors"
-          >
-            {copied ? '✓ Copied' : '📋 Copy'}
-          </button>
+          {artifact.type !== 'demo-page' && (
+            <button
+              onClick={handleCopy}
+              className="text-xs bg-light-alt hover:bg-warm-gray text-text-muted px-3 py-1.5 rounded-md transition-colors"
+            >
+              {copied ? '✓ Copied' : '📋 Copy'}
+            </button>
+          )}
           {artifact.type === 'demo-page' ? (
             <Link
               href={`/demo/${resultId}`}
               target="_blank"
-              className="text-xs bg-accent/20 hover:bg-accent/30 text-primary px-3 py-1.5 rounded-md transition-colors border border-accent/20"
+              className="text-xs bg-text-dark hover:bg-text-dark/90 text-white px-3 py-1.5 rounded-md transition-colors font-medium"
             >
-              🔗 View Demo Page
+              🎯 View Full Demo Page
             </Link>
-          ) : c.actionLabel && !artifact.sentAt ? (
-            <button
-              onClick={onMarkSent}
-              className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 rounded-md transition-colors border border-primary/20"
-            >
-              {c.actionLabel}
-            </button>
-          ) : null}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-xs text-text-muted hover:text-text-muted px-2 py-1.5 transition-colors"
-          >
-            {expanded ? '▲ Collapse' : '▼ Preview'}
-          </button>
+          ) : (
+            <>
+              {c.actionLabel && !artifact.sentAt && (
+                <button
+                  onClick={onMarkSent}
+                  className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 rounded-md transition-colors border border-primary/20"
+                >
+                  {c.actionLabel}
+                </button>
+              )}
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="text-xs text-text-muted hover:text-text-dark px-2 py-1.5 transition-colors"
+              >
+                {expanded ? '▲ Collapse' : '▼ Preview'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -181,11 +187,17 @@ function ResultsContent() {
 
           {/* Pain points */}
           {result.company.painPoints.length > 0 && (
-            <div className="bg-red-900/10 border border-red-900/20 rounded-lg px-4 py-3 mb-4">
-              <p className="text-xs text-red-600 font-semibold mb-1.5">Identified Pain Points</p>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">🩸</span>
+                <p className="text-sm text-red-700 font-bold uppercase tracking-wide">Identified Pain Points</p>
+              </div>
+              <div className="space-y-2">
                 {result.company.painPoints.map((pp, i) => (
-                  <span key={i} className="text-xs text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full">{pp}</span>
+                  <div key={i} className="flex items-start gap-2.5">
+                    <span className="text-red-400 mt-0.5 text-xs">●</span>
+                    <p className="text-sm text-red-800 leading-relaxed">{pp}</p>
+                  </div>
                 ))}
               </div>
             </div>

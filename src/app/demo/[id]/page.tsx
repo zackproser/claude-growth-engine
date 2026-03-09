@@ -14,84 +14,105 @@ interface ParsedCard {
 }
 
 function parseValueProp(content: string): ParsedCard[] {
+  // Strategy: split on arrows (→) which the agent uses to separate capabilities.
+  // Each chunk between arrows becomes a card.
+  // Also handle: newline-separated paragraphs, numbered lists, markdown headers.
+
+  let chunks: string[] = [];
+
+  // First try: split on → that appears mid-text (agent uses these as section separators)
+  const arrowChunks = content.split(/\s*→\s*/);
+  if (arrowChunks.length >= 3) {
+    chunks = arrowChunks.map(c => c.trim()).filter(c => c.length > 15);
+  } else {
+    // Fallback: split on double newlines or newline + capital letter
+    chunks = content
+      .split(/\n\n+|\n(?=[A-Z][a-z]+ )/)
+      .map(c => c.trim())
+      .filter(c => c.length > 20);
+  }
+
+  // If still just one chunk, split on sentences
+  if (chunks.length <= 1) {
+    chunks = content
+      .split(/(?<=\.)\s+(?=[A-Z])/)
+      .filter(c => c.trim().length > 30);
+  }
+
+  // Remove the "Make your first API call" CTA line and curl examples
+  chunks = chunks.filter(c =>
+    !c.match(/^Make your first API call/i) &&
+    !c.match(/^curl\s/) &&
+    !c.match(/^https?:\/\/api\./)
+  );
+
   const cards: ParsedCard[] = [];
 
-  // Strategy 1: Split on "→" arrows (common agent output pattern)
-  // e.g. "Split-milestone invoices → POST /invoices + POST /invoices/{id}/pay Auto-generate..."
-  const arrowSections = content.split(/\n/).filter(l => l.trim());
+  for (const chunk of chunks) {
+    // Extract ALL endpoints from this chunk
+    const endpoints = [...chunk.matchAll(/(GET|POST|PUT|DELETE|PATCH)\s+(\/\S+)/g)];
+    const endpoint = endpoints.length > 0
+      ? endpoints.map(m => `${m[1]} ${m[2]}`).join(' + ')
+      : undefined;
 
-  // Group lines into logical sections (blank line or arrow = new section)
-  const sections: string[] = [];
-  let current = '';
-  for (const line of arrowSections) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      if (current) sections.push(current);
-      current = '';
-    } else if (trimmed.includes('→') && current && !current.includes('→')) {
-      sections.push(current);
-      current = trimmed;
-    } else {
-      current += (current ? '\n' : '') + trimmed;
-    }
-  }
-  if (current) sections.push(current);
+    // Strip endpoints and curl commands from the display text
+    let text = chunk
+      .replace(/(GET|POST|PUT|DELETE|PATCH)\s+\/\S+/g, '')
+      .replace(/\+\s*\+/g, '')
+      .replace(/curl\s+.*$/gm, '')
+      .replace(/https?:\/\/api\.\S+/g, '')
+      .trim();
 
-  for (const section of sections) {
-    // Extract endpoint
-    const endpointMatch = section.match(/(GET|POST|PUT|DELETE|PATCH)\s+(\/\S+)/);
-    const endpoint = endpointMatch ? `${endpointMatch[1]} ${endpointMatch[2]}` : undefined;
-
-    // Extract headline: use text before → if present, otherwise first sentence capped at ~60 chars
+    // Extract headline: first sentence, capped at 60 chars
     let headline = '';
-    let body = section;
+    let body = text;
 
-    const arrowIdx = section.indexOf('→');
-    if (arrowIdx > 0 && arrowIdx < 80) {
-      headline = section.slice(0, arrowIdx).trim();
-      body = section.slice(arrowIdx + 1).trim();
+    // Try first sentence (up to first period followed by space+capital)
+    const sentenceEnd = text.match(/^(.{15,80}?[.!])\s+(?=[A-Z])/);
+    if (sentenceEnd) {
+      headline = sentenceEnd[1];
+      body = text.slice(headline.length).trim();
+    } else if (text.length <= 80) {
+      headline = text;
+      body = '';
     } else {
-      // Cap headline at first sentence or ~60 chars
-      const periodIdx = section.indexOf('.');
-      const commaIdx = section.indexOf(',');
-      const dashIdx = section.indexOf('—');
+      // Force break at comma, em-dash, or word boundary
+      const breaks = [
+        text.indexOf(',', 15),
+        text.indexOf('—', 15),
+        text.indexOf(' — ', 15),
+      ].filter(i => i > 10 && i < 70);
 
-      // Find the best break point under 60 chars
-      const breakPoints = [periodIdx, commaIdx, dashIdx]
-        .filter(i => i > 10 && i < 70)
-        .sort((a, b) => a - b);
-
-      if (breakPoints.length > 0) {
-        headline = section.slice(0, breakPoints[0]).trim();
-        body = section.slice(breakPoints[0] + 1).trim();
-      } else if (section.length > 60) {
-        // Force break at word boundary near 60
-        const spaceIdx = section.lastIndexOf(' ', 60);
-        headline = section.slice(0, spaceIdx > 20 ? spaceIdx : 60).trim();
-        body = section.slice(headline.length).trim();
+      if (breaks.length > 0) {
+        const breakAt = Math.min(...breaks);
+        headline = text.slice(0, breakAt).trim();
+        body = text.slice(breakAt + 1).trim().replace(/^—?\s*/, '');
       } else {
-        headline = section;
-        body = '';
+        const spaceAt = text.lastIndexOf(' ', 60);
+        headline = text.slice(0, spaceAt > 20 ? spaceAt : 60).trim();
+        body = text.slice(headline.length).trim();
       }
     }
 
-    // Clean up: remove endpoint references from body since we show them as badges
-    if (endpoint) {
-      body = body
-        .replace(/\+?\s*(GET|POST|PUT|DELETE|PATCH)\s+\/\S+/g, '')
-        .replace(/^\s*[+,]\s*/, '')
-        .trim();
+    // Clean up stray punctuation
+    headline = headline.replace(/^[→\-•]\s*/, '').replace(/[,:;]$/, '').trim();
+    body = body.replace(/^[→\-•,]\s*/, '').trim();
+
+    // Never duplicate
+    if (body.startsWith(headline)) {
+      body = body.slice(headline.length).replace(/^[.:,—\s]+/, '').trim();
     }
 
-    // Skip intro/summary sections that just repeat the overview
-    if (headline.length < 10 && !body) continue;
-
-    // Never let body = headline (the duplication bug)
-    if (body === headline || body.startsWith(headline)) {
-      body = body.slice(headline.length).trim().replace(/^[.:,—]\s*/, '');
+    // Truncate body at ~200 chars for scannability
+    if (body.length > 200) {
+      const cutAt = body.lastIndexOf('.', 200);
+      body = body.slice(0, cutAt > 100 ? cutAt + 1 : 200).trim();
+      if (!body.endsWith('.')) body += '…';
     }
 
-    cards.push({ headline, body, endpoint });
+    if (headline.length >= 10) {
+      cards.push({ headline, body, endpoint });
+    }
   }
 
   return cards;
