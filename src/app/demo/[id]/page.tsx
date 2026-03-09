@@ -487,7 +487,7 @@ export default function DemoPage() {
               <div>
                 <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)}
                   placeholder="e.g., We need real-time billing sync across 3 payment providers..."
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-700 placeholder-slate-400 focus:border-orange-400 focus:ring-1 focus:ring-orange-400 resize-none h-24 mb-4" />
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-700 bg-white placeholder-slate-400 focus:border-orange-400 focus:ring-1 focus:ring-orange-400 resize-none h-24 mb-4" />
                 <button onClick={handleFeedback} disabled={!feedback.trim()}
                   className="bg-orange-500 text-white px-8 py-3 rounded-xl font-semibold hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 transition-colors">
                   Share Feedback
@@ -527,7 +527,7 @@ export default function DemoPage() {
               <input value={chatInput} onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleChat()}
                 placeholder="Type a question..."
-                className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:border-orange-400 focus:ring-1 focus:ring-orange-400" />
+                className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 bg-white placeholder-slate-400 focus:border-orange-400 focus:ring-1 focus:ring-orange-400" />
               <button onClick={handleChat} disabled={!chatInput.trim()}
                 className="bg-orange-500 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 transition-colors">
                 Send
