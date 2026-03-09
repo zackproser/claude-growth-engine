@@ -43,6 +43,42 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* One URL blade */}
+        <div className="py-16 border-t border-neutral-800">
+          <div className="grid md:grid-cols-2 gap-10 items-center">
+            <div>
+              <span className="text-xs font-semibold text-accent uppercase tracking-wider">One input. Full intelligence.</span>
+              <h2 className="text-3xl font-bold text-text-light mt-2 mb-4">Give the agent a URL. It does the rest.</h2>
+              <p className="text-neutral-400 mb-6 leading-relaxed">
+                You don&apos;t prep anything about the target company. The Claude agent takes a single URL and autonomously builds a complete picture — then generates outreach materials that reference specific details only someone who did the homework would know.
+              </p>
+              <p className="text-neutral-500 text-sm leading-relaxed">
+                Every action is a real Anthropic API call through the Claude Agent SDK. WebSearch finds their public footprint. WebFetch reads their site. The agent reasons about what it finds — no templates, no mail-merge, no shortcuts.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {[
+                { icon: '🔍', title: 'Deep company research', desc: 'Searches the web for news, funding, product launches, competitive positioning. Reads their entire site.', tag: 'WebSearch + WebFetch' },
+                { icon: '🧠', title: 'Pain point identification', desc: 'Analyzes their business model and maps challenges to your specific API capabilities.', tag: 'Claude reasoning' },
+                { icon: '🛠️', title: 'Tech stack detection', desc: 'Identifies their tools, frameworks, and infrastructure from job postings, docs, and site source.', tag: 'WebFetch' },
+                { icon: '🎨', title: 'Brand asset discovery', desc: 'Finds their logo, brand colors, and tagline to personalize the demo page.', tag: 'WebSearch' },
+                { icon: '📊', title: 'Competitive context', desc: 'Understands where they sit in the market so your outreach references what matters to them.', tag: 'Claude reasoning' },
+              ].map((item) => (
+                <div key={item.title} className="flex gap-4 bg-dark-alt/50 rounded-xl border border-neutral-800 p-4 hover:border-neutral-700 transition-colors">
+                  <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="text-sm font-semibold text-text-light">{item.title}</h3>
+                      <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono">{item.tag}</span>
+                    </div>
+                    <p className="text-xs text-neutral-500 leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* How it works — compact pipeline */}
         <div className="py-16 border-t border-neutral-800">
           <div className="text-center mb-12">
