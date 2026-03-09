@@ -5,102 +5,133 @@ import { useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import type { AnalysisResult } from '@/lib/types';
 
-const VALUE_PROP_EMOJIS = ['💰', '🔄', '🛒', '🔔', '📊', '⚡', '🔐', '📈', '🎯', '🚀'];
+const CARD_EMOJIS = ['💰', '🔄', '🛒', '🔔', '📊', '⚡', '🔐', '📈', '🎯', '🚀'];
 
-function ValuePropCards({ content }: { content: string }) {
-  // Split content into sections by line breaks + keyword patterns
-  // Each section becomes a scannable card
-  const sections = content
-    .split(/\n(?=[A-Z]|\d+\.)/)
-    .map(s => s.trim())
-    .filter(s => s.length > 20);
+interface ParsedCard {
+  headline: string;
+  body: string;
+  endpoint?: string;
+}
 
-  if (sections.length <= 1) {
-    // Fallback: split by sentences for flat text
-    const sentences = content
-      .split(/(?<=[.!])\s+(?=[A-Z])/)
-      .filter(s => s.trim().length > 15);
+function parseValueProp(content: string): ParsedCard[] {
+  const cards: ParsedCard[] = [];
 
-    if (sentences.length <= 2) {
-      // Very short — just render as styled prose
-      return (
-        <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-8 border border-orange-100">
-          <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-900 prose-strong:text-slate-800">
-            <ReactMarkdown>{content}</ReactMarkdown>
-          </div>
-        </div>
-      );
+  // Strategy 1: Split on "→" arrows (common agent output pattern)
+  // e.g. "Split-milestone invoices → POST /invoices + POST /invoices/{id}/pay Auto-generate..."
+  const arrowSections = content.split(/\n/).filter(l => l.trim());
+
+  // Group lines into logical sections (blank line or arrow = new section)
+  const sections: string[] = [];
+  let current = '';
+  for (const line of arrowSections) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (current) sections.push(current);
+      current = '';
+    } else if (trimmed.includes('→') && current && !current.includes('→')) {
+      sections.push(current);
+      current = trimmed;
+    } else {
+      current += (current ? '\n' : '') + trimmed;
+    }
+  }
+  if (current) sections.push(current);
+
+  for (const section of sections) {
+    // Extract endpoint
+    const endpointMatch = section.match(/(GET|POST|PUT|DELETE|PATCH)\s+(\/\S+)/);
+    const endpoint = endpointMatch ? `${endpointMatch[1]} ${endpointMatch[2]}` : undefined;
+
+    // Extract headline: use text before → if present, otherwise first sentence capped at ~60 chars
+    let headline = '';
+    let body = section;
+
+    const arrowIdx = section.indexOf('→');
+    if (arrowIdx > 0 && arrowIdx < 80) {
+      headline = section.slice(0, arrowIdx).trim();
+      body = section.slice(arrowIdx + 1).trim();
+    } else {
+      // Cap headline at first sentence or ~60 chars
+      const periodIdx = section.indexOf('.');
+      const commaIdx = section.indexOf(',');
+      const dashIdx = section.indexOf('—');
+
+      // Find the best break point under 60 chars
+      const breakPoints = [periodIdx, commaIdx, dashIdx]
+        .filter(i => i > 10 && i < 70)
+        .sort((a, b) => a - b);
+
+      if (breakPoints.length > 0) {
+        headline = section.slice(0, breakPoints[0]).trim();
+        body = section.slice(breakPoints[0] + 1).trim();
+      } else if (section.length > 60) {
+        // Force break at word boundary near 60
+        const spaceIdx = section.lastIndexOf(' ', 60);
+        headline = section.slice(0, spaceIdx > 20 ? spaceIdx : 60).trim();
+        body = section.slice(headline.length).trim();
+      } else {
+        headline = section;
+        body = '';
+      }
     }
 
-    // Medium length — render as bullet cards
-    return (
-      <div className="grid md:grid-cols-2 gap-3">
-        {sentences.map((sentence, i) => {
-          // Try to extract a headline from the first phrase
-          const colonSplit = sentence.indexOf('→');
-          const headline = colonSplit > 0 ? sentence.slice(0, colonSplit).trim() : null;
-          const body = colonSplit > 0 ? sentence.slice(colonSplit + 1).trim() : sentence;
+    // Clean up: remove endpoint references from body since we show them as badges
+    if (endpoint) {
+      body = body
+        .replace(/\+?\s*(GET|POST|PUT|DELETE|PATCH)\s+\/\S+/g, '')
+        .replace(/^\s*[+,]\s*/, '')
+        .trim();
+    }
 
-          return (
-            <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition-all">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl flex-shrink-0">{VALUE_PROP_EMOJIS[i % VALUE_PROP_EMOJIS.length]}</span>
-                <div>
-                  {headline && (
-                    <h3 className="text-sm font-bold text-slate-900 mb-1">{headline}</h3>
-                  )}
-                  <p className="text-sm text-slate-600 leading-relaxed">{body}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+    // Skip intro/summary sections that just repeat the overview
+    if (headline.length < 10 && !body) continue;
+
+    // Never let body = headline (the duplication bug)
+    if (body === headline || body.startsWith(headline)) {
+      body = body.slice(headline.length).trim().replace(/^[.:,—]\s*/, '');
+    }
+
+    cards.push({ headline, body, endpoint });
+  }
+
+  return cards;
+}
+
+function ValuePropCards({ content }: { content: string }) {
+  const cards = parseValueProp(content);
+
+  if (cards.length === 0) {
+    return (
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-8 border border-orange-100">
+        <div className="prose prose-sm max-w-none text-slate-700">
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </div>
       </div>
     );
   }
 
-  // Multiple sections — render as cards
   return (
     <div className="grid md:grid-cols-2 gap-4">
-      {sections.map((section, i) => {
-        // Extract headline (first line or up to first period/colon)
-        const lines = section.split('\n');
-        const firstLine = lines[0].replace(/^#+\s*/, '').replace(/^\d+\.\s*/, '');
-        const rest = lines.slice(1).join('\n').trim() || (firstLine.length > 80 ? '' : '');
-        
-        // If first line is short, use as headline; otherwise split at arrow/colon
-        let headline = firstLine;
-        let body = rest;
-        
-        const arrowIdx = firstLine.indexOf('→');
-        const colonIdx = firstLine.indexOf(':');
-        const splitIdx = arrowIdx > 0 ? arrowIdx : (colonIdx > 0 && colonIdx < 60) ? colonIdx : -1;
-        
-        if (splitIdx > 0 && !rest) {
-          headline = firstLine.slice(0, splitIdx).trim();
-          body = firstLine.slice(splitIdx + 1).trim() + (rest ? '\n' + rest : '');
-        }
-
-        // Extract endpoint if present
-        const endpointMatch = section.match(/(GET|POST|PUT|DELETE|PATCH)\s+(\/\S+)/);
-
-        return (
-          <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition-all">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl flex-shrink-0 mt-0.5">{VALUE_PROP_EMOJIS[i % VALUE_PROP_EMOJIS.length]}</span>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-slate-900 mb-1.5">{headline}</h3>
-                {endpointMatch && (
-                  <code className="text-xs bg-slate-100 text-orange-600 px-2 py-0.5 rounded font-mono mb-2 inline-block">
-                    {endpointMatch[1]} {endpointMatch[2]}
-                  </code>
-                )}
-                <p className="text-sm text-slate-600 leading-relaxed">{body || headline}</p>
-              </div>
+      {cards.map((card, i) => (
+        <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-all group">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+              {CARD_EMOJIS[i % CARD_EMOJIS.length]}
+            </span>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-slate-900 mb-1.5 leading-snug">{card.headline}</h3>
+              {card.endpoint && (
+                <code className="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-mono mb-2 inline-block">
+                  {card.endpoint}
+                </code>
+              )}
+              {card.body && (
+                <p className="text-sm text-slate-500 leading-relaxed mt-1.5">{card.body}</p>
+              )}
             </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
