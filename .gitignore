@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# artifacts — blog post, emails, deliverables (not part of OSS project)
+/artifacts/blog-post.md
+/artifacts/cold-email.md
+/artifacts/script.md

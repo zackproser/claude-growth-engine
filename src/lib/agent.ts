@@ -66,7 +66,7 @@ Return your findings as a JSON object with this exact structure:
     {
       "type": "value-prop",
       "title": "Value Proposition",
-      "content": "A compelling value prop that maps SPECIFIC API endpoints to SPECIFIC pain points of the target company. Show them exactly which endpoints solve which problems. Include 'make your first API call in under a minute' messaging."
+      "content": "A JSON array of 4-6 value proposition cards, each mapping a specific API endpoint to a specific pain point of the target company. Format: [{\"headline\": \"Short punchy title under 70 chars\", \"body\": \"2-3 sentences explaining how this endpoint solves their specific problem — be concrete, reference their actual business\", \"endpoint\": \"POST /path/to/endpoint\"}]. Return ONLY the JSON array as the content string, no markdown, no wrapping object."
     },
     {
       "type": "demo-page",
