@@ -108,7 +108,6 @@ for await (const message of query({
 }
 ```
 
-The agent researches, generates, scores, and tracks — all through the Anthropic API. **Every agent action = API call = Anthropic revenue.**
 
 ---
 
