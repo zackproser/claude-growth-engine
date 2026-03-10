@@ -19,6 +19,10 @@
 
 <img src="img/growth-engine-flow.svg" alt="Growth Engine Flow" width="720" />
 
+<br />
+
+[![Watch the demo](https://img.youtube.com/vi/XZWcyL6qQwM/maxresdefault.jpg)](https://youtu.be/XZWcyL6qQwM)
+
 </div>
 
 ---

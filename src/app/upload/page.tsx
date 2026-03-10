@@ -113,68 +113,68 @@ export default function UploadPage() {
 
   if (parsedSpec) {
     return (
-      <div className="bg-dark min-h-screen py-12">
+      <div className="bg-cream min-h-screen py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-text-light mb-4">
+            <h1 className="text-4xl font-bold text-text-dark mb-4">
               OpenAPI Spec Validated ✓
             </h1>
-            <p className="text-xl text-neutral-300">
-              Validated with <span className="text-accent">swagger-parser</span> — your spec is good to go.
+            <p className="text-xl text-text-muted">
+              Validated with <span className="text-primary">swagger-parser</span> — your spec is good to go.
             </p>
           </div>
 
-          <div className="bg-dark-alt rounded-lg border border-neutral-700 p-8 mb-8">
+          <div className="bg-white rounded-lg border border-anthropic-border p-8 mb-8">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-lg font-semibold text-text-light mb-2">API Name</h3>
+                <h3 className="text-lg font-semibold text-text-dark mb-2">API Name</h3>
                 <p className="text-primary text-xl font-medium">{parsedSpec.name}</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-text-light mb-2">Version</h3>
-                <p className="text-neutral-300">{parsedSpec.version}</p>
+                <h3 className="text-lg font-semibold text-text-dark mb-2">Version</h3>
+                <p className="text-text-muted">{parsedSpec.version}</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-text-light mb-2">Endpoints</h3>
-                <p className="text-accent text-xl font-medium">{parsedSpec.endpointCount} endpoints</p>
+                <h3 className="text-lg font-semibold text-text-dark mb-2">Endpoints</h3>
+                <p className="text-primary text-xl font-medium">{parsedSpec.endpointCount} endpoints</p>
               </div>
               {parsedSpec.baseUrl && (
                 <div>
-                  <h3 className="text-lg font-semibold text-text-light mb-2">Base URL</h3>
-                  <p className="text-neutral-300 break-all">{parsedSpec.baseUrl}</p>
+                  <h3 className="text-lg font-semibold text-text-dark mb-2">Base URL</h3>
+                  <p className="text-text-muted break-all">{parsedSpec.baseUrl}</p>
                 </div>
               )}
             </div>
 
             {parsedSpec.description && (
               <div className="mt-6">
-                <h3 className="text-lg font-semibold text-text-light mb-2">Description</h3>
-                <p className="text-neutral-300">{parsedSpec.description}</p>
+                <h3 className="text-lg font-semibold text-text-dark mb-2">Description</h3>
+                <p className="text-text-muted">{parsedSpec.description}</p>
               </div>
             )}
 
             <div className="mt-6">
-              <h3 className="text-lg font-semibold text-text-light mb-3">Endpoints</h3>
+              <h3 className="text-lg font-semibold text-text-dark mb-3">Endpoints</h3>
               <div className="space-y-2">
                 {parsedSpec.endpoints.slice(0, 15).map((ep, index) => (
-                  <div key={index} className="bg-dark rounded px-3 py-2 text-sm font-mono text-neutral-300 flex items-start gap-2">
+                  <div key={index} className="bg-cream rounded px-3 py-2 text-sm font-mono text-text-muted flex items-start gap-2">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
-                      ep.method === 'GET' ? 'bg-green-900/40 text-green-400' :
-                      ep.method === 'POST' ? 'bg-blue-900/40 text-blue-400' :
-                      ep.method === 'PUT' ? 'bg-yellow-900/40 text-yellow-400' :
-                      ep.method === 'DELETE' ? 'bg-red-900/40 text-red-400' :
-                      'bg-neutral-700 text-neutral-300'
+                      ep.method === 'GET' ? 'bg-green-50 text-green-700 border border-green-200' :
+                      ep.method === 'POST' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                      ep.method === 'PUT' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
+                      ep.method === 'DELETE' ? 'bg-red-50 text-red-700 border border-red-200' :
+                      'bg-light-alt text-text-muted border border-anthropic-border'
                     }`}>
                       {ep.method}
                     </span>
                     <span>{ep.path}</span>
                     {ep.summary && (
-                      <span className="text-neutral-500 text-xs ml-auto">{ep.summary}</span>
+                      <span className="text-text-muted text-xs ml-auto">{ep.summary}</span>
                     )}
                   </div>
                 ))}
                 {parsedSpec.endpointCount > 15 && (
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-text-muted">
                     ... and {parsedSpec.endpointCount - 15} more endpoints
                   </p>
                 )}
@@ -185,7 +185,7 @@ export default function UploadPage() {
           <div className="text-center">
             <Link
               href="/target"
-              className="inline-block bg-primary text-dark px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-600 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="inline-block bg-text-dark text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-text-dark/90 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               Next: Choose Target →
             </Link>
@@ -196,24 +196,24 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="bg-dark min-h-screen py-12">
+    <div className="bg-cream min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-text-light mb-4">
+          <h1 className="text-4xl font-bold text-text-dark mb-4">
             Upload Your OpenAPI Specification
           </h1>
-          <p className="text-xl text-neutral-300">
-            We validate with <span className="text-accent">swagger-parser</span> to ensure your spec is correct.
+          <p className="text-xl text-text-muted">
+            We validate with <span className="text-primary">swagger-parser</span> to ensure your spec is correct.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* File Upload */}
-          <div className="bg-dark-alt rounded-lg border border-neutral-700 p-6">
-            <h3 className="text-xl font-semibold text-text-light mb-4">Upload File</h3>
+          <div className="bg-white rounded-lg border border-anthropic-border p-6">
+            <h3 className="text-xl font-semibold text-text-dark mb-4">Upload File</h3>
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                dragActive ? 'border-primary bg-primary/10' : 'border-neutral-600 hover:border-neutral-500'
+                dragActive ? 'border-primary bg-primary/10' : 'border-anthropic-border hover:border-text-muted'
               }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -223,9 +223,9 @@ export default function UploadPage() {
               <div className="space-y-4">
                 <div className="text-4xl">📄</div>
                 <div>
-                  <p className="text-text-light mb-2">Drag and drop your file here</p>
-                  <p className="text-sm text-neutral-400 mb-4">Supports .json, .yaml, .yml files</p>
-                  <label className="inline-block bg-neutral-700 hover:bg-neutral-600 text-text-light px-4 py-2 rounded cursor-pointer transition-colors">
+                  <p className="text-text-dark mb-2">Drag and drop your file here</p>
+                  <p className="text-sm text-text-muted mb-4">Supports .json, .yaml, .yml files</p>
+                  <label className="inline-block bg-light-alt hover:bg-light-alt text-text-dark px-4 py-2 rounded cursor-pointer transition-colors">
                     Choose File
                     <input type="file" className="hidden" accept=".json,.yaml,.yml" onChange={handleFileInputChange} />
                   </label>
@@ -235,19 +235,19 @@ export default function UploadPage() {
           </div>
 
           {/* Text Input */}
-          <div className="bg-dark-alt rounded-lg border border-neutral-700 p-6">
-            <h3 className="text-xl font-semibold text-text-light mb-4">Paste Specification</h3>
+          <div className="bg-white rounded-lg border border-anthropic-border p-6">
+            <h3 className="text-xl font-semibold text-text-dark mb-4">Paste Specification</h3>
             <div className="space-y-4">
               <textarea
                 value={specText}
                 onChange={(e) => setSpecText(e.target.value)}
                 placeholder='Paste your OpenAPI specification (JSON) here...'
-                className="w-full h-48 bg-dark border border-neutral-600 rounded-lg px-4 py-3 text-text-light placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm"
+                className="w-full h-48 bg-cream border border-anthropic-border rounded-lg px-4 py-3 text-text-dark placeholder-text-muted focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm"
               />
               <button
                 onClick={handleTextSubmit}
                 disabled={isValidating || !specText.trim()}
-                className="w-full bg-primary text-dark py-3 rounded-lg font-semibold hover:bg-orange-600 disabled:bg-neutral-600 disabled:text-neutral-400 transition-colors"
+                className="w-full bg-text-dark text-white py-3 rounded-lg font-semibold hover:bg-text-dark/90 disabled:bg-light-alt disabled:text-text-muted transition-colors"
               >
                 {isValidating ? 'Validating with swagger-parser...' : 'Validate Specification'}
               </button>
@@ -256,24 +256,24 @@ export default function UploadPage() {
         </div>
 
         {error && (
-          <div className="mt-6 bg-red-900/20 border border-red-800 rounded-lg p-4">
-            <p className="text-red-300">{error}</p>
+          <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600">{error}</p>
           </div>
         )}
 
         {validationErrors.length > 0 && (
-          <div className="mt-6 bg-red-900/20 border border-red-800 rounded-lg p-4">
-            <p className="text-red-300 font-semibold mb-2">Validation Errors:</p>
+          <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600 font-semibold mb-2">Validation Errors:</p>
             <ul className="list-disc pl-5 space-y-1">
               {validationErrors.map((err, i) => (
-                <li key={i} className="text-red-300 text-sm">{err}</li>
+                <li key={i} className="text-red-600 text-sm">{err}</li>
               ))}
             </ul>
           </div>
         )}
 
         <div className="text-center mt-8">
-          <Link href="/" className="text-neutral-400 hover:text-text-light transition-colors">
+          <Link href="/" className="text-text-muted hover:text-text-dark transition-colors">
             ← Back to Home
           </Link>
         </div>
