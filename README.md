@@ -21,7 +21,9 @@
 
 <br />
 
-[![Watch the demo](https://img.youtube.com/vi/XZWcyL6qQwM/maxresdefault.jpg)](https://youtu.be/XZWcyL6qQwM)
+## Watch the 7-Minute Walkthrough
+
+[![Watch the demo](https://img.youtube.com/vi/XZWcyL6qQwM/hqdefault.jpg)](https://youtu.be/XZWcyL6qQwM)
 
 </div>
 
