@@ -237,29 +237,46 @@ export default function TargetPage() {
 
           <div className="bg-white rounded-lg p-6 border border-anthropic-border max-h-80 overflow-y-auto">
             <div className="space-y-2 text-left">
-              {steps.map((s, i) => (
-                <div key={i} className="flex items-start space-x-3 animate-fadeIn">
-                  <span className="flex-shrink-0 mt-0.5">
-                    {i < steps.length - 1 || s.done ? (
-                      <span className="text-green-500 text-base">✓</span>
-                    ) : (
-                      <ClaudeStepIcon active />
+              {(() => {
+                const MAX_VISIBLE = 7;
+                const hiddenCount = Math.max(0, steps.length - MAX_VISIBLE);
+                const visibleSteps = hiddenCount > 0 ? steps.slice(hiddenCount) : steps;
+                return (
+                  <>
+                    {hiddenCount > 0 && (
+                      <div className="text-xs text-text-muted text-center pb-1 border-b border-anthropic-border mb-2">
+                        {hiddenCount} earlier {hiddenCount === 1 ? 'step' : 'steps'} completed
+                      </div>
                     )}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-sm block ${
-                      i === steps.length - 1 && !s.done ? 'text-text-dark font-medium' : 'text-text-muted'
-                    }`}>
-                      {s.step}
-                    </span>
-                    {i < steps.length - 1 && steps[i + 1] && (
-                      <span className="text-xs text-text-muted">
-                        {((steps[i + 1].timestamp - s.timestamp) / 1000).toFixed(1)}s
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                    {visibleSteps.map((s, vi) => {
+                      const i = vi + hiddenCount; // original index
+                      return (
+                        <div key={i} className="flex items-start space-x-3 animate-fadeIn">
+                          <span className="flex-shrink-0 mt-0.5">
+                            {i < steps.length - 1 || s.done ? (
+                              <span className="text-green-500 text-base">✓</span>
+                            ) : (
+                              <ClaudeStepIcon active />
+                            )}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm block ${
+                              i === steps.length - 1 && !s.done ? 'text-text-dark font-medium' : 'text-text-muted'
+                            }`}>
+                              {s.step}
+                            </span>
+                            {i < steps.length - 1 && steps[i + 1] && (
+                              <span className="text-xs text-text-muted">
+                                {((steps[i + 1].timestamp - s.timestamp) / 1000).toFixed(1)}s
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                );
+              })()}
               <div ref={stepsEndRef} />
             </div>
           </div>

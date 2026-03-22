@@ -133,29 +133,41 @@ export async function runGrowthAgent(
     }
   };
 
-  // Time-based fallback: if no phase emitted in 15s, show a "still working" message
+  // Time-based fallback: if no phase emitted recently, show a narrative "still working" message
   let lastPhaseTime = Date.now();
-  const idleMessages = [
-    'Deep-diving into their tech stack...',
-    'Crafting personalized hooks...',
-    'Analyzing competitive positioning...',
-    'Cross-referencing API capabilities...',
-    'Evaluating market fit signals...',
-    'Studying their product landscape...',
+  const idleNarrative = [
+    'Researching company background...',
+    'Analyzing their product and market position...',
+    'Identifying technical pain points...',
+    'Mapping API endpoints to business challenges...',
+    'Crafting personalized cold email...',
+    'Designing demo page narrative...',
+    'Writing LinkedIn outreach...',
+    'Composing voicemail script...',
+    'Finalizing outreach strategy...',
+    'Assembling complete outreach suite...',
   ];
-  let idleMessageIndex = 0;
-  const idleInterval = setInterval(() => {
-    try {
-      if (Date.now() - lastPhaseTime >= 15_000) {
-        const msg = idleMessages[idleMessageIndex % idleMessages.length];
-        idleMessageIndex++;
-        emit({ step: msg });
-        lastPhaseTime = Date.now();
+  let idleNarrativeIndex = 0;
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const randomIdleDelay = () => 12_000 + Math.random() * 10_000; // 12-22s
+
+  const scheduleIdleMessage = () => {
+    if (idleNarrativeIndex >= idleNarrative.length) return; // narrative exhausted
+    idleTimer = setTimeout(() => {
+      try {
+        if (idleNarrativeIndex < idleNarrative.length && Date.now() - lastPhaseTime >= 10_000) {
+          emit({ step: idleNarrative[idleNarrativeIndex] });
+          idleNarrativeIndex++;
+          lastPhaseTime = Date.now();
+        }
+        scheduleIdleMessage();
+      } catch {
+        // stop on error
       }
-    } catch {
-      clearInterval(idleInterval);
-    }
-  }, 5_000);
+    }, randomIdleDelay());
+  };
+  scheduleIdleMessage();
 
   try {
   for await (const message of query({
@@ -249,7 +261,7 @@ export async function runGrowthAgent(
     }
   }
   } finally {
-    clearInterval(idleInterval);
+    if (idleTimer) clearTimeout(idleTimer);
   }
 
   if (!resultText) {
