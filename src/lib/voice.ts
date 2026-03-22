@@ -11,18 +11,15 @@ function getClient(): ElevenLabsClient {
   return new ElevenLabsClient({ apiKey });
 }
 
-import { trackingEvents } from '@/app/api/track/route';
 import type { TrackingEvent } from './types';
 
 function trackVoiceEvent(resultId: string, companyUrl: string, eventType: TrackingEvent['eventType'], metadata?: Record<string, string>) {
-  trackingEvents.push({
-    resultId,
-    companyUrl,
-    eventType,
-    metadata,
-    timestamp: new Date().toISOString(),
-  });
-  console.log('[Track]', eventType, companyUrl, metadata);
+  // POST to the track API to ensure events land in the same store the dashboard reads
+  fetch('http://localhost:3000/api/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resultId, companyUrl, eventType, metadata }),
+  }).catch(err => console.error('[Voice] Track event failed:', err));
 }
 
 export function isVoiceConfigured(): boolean {

@@ -17,8 +17,13 @@ jest.mock('@elevenlabs/elevenlabs-js', () => ({
   })),
 }));
 
-// Mock global fetch
-const mockFetch = jest.fn();
+// Mock global fetch — default to success for tracking calls
+const mockFetch = jest.fn().mockImplementation((url: string) => {
+  if (typeof url === 'string' && url.includes('/api/track')) {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+  }
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+});
 global.fetch = mockFetch;
 
 // Save and restore env vars
@@ -26,6 +31,13 @@ const originalEnv = { ...process.env };
 afterEach(() => {
   process.env = { ...originalEnv };
   mockFetch.mockReset();
+  // Restore default tracking handler after reset
+  mockFetch.mockImplementation((url: string) => {
+    if (typeof url === 'string' && url.includes('/api/track')) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+    }
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+  });
 });
 
 describe('Voice Configuration', () => {
