@@ -6,9 +6,10 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import type { AnalysisResult, OutreachArtifact, VoiceCallResult } from '@/lib/types';
 
-function ArtifactCard({ artifact, resultId, onMarkSent }: {
+function ArtifactCard({ artifact, resultId, result, onMarkSent }: {
   artifact: OutreachArtifact;
   resultId: string;
+  result?: AnalysisResult | null;
   onMarkSent: () => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -23,7 +24,13 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
       const res = await fetch('/api/voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resultId }),
+        body: JSON.stringify({
+          resultId,
+          script: artifact.content,
+          companyName: result?.company?.name,
+          productContext: result?.spec ? `Product: ${result.spec.name}\n${result.spec.description || ''}\nEndpoints: ${result.spec.endpoints.slice(0, 10).map((e: { method: string; path: string; summary?: string }) => `${e.method} ${e.path}${e.summary ? ' — ' + e.summary : ''}`).join('\n')}` : '',
+          reasoning: result?.voicemailReasoning,
+        }),
       });
       const data = await res.json();
       if (data.error) {
@@ -157,7 +164,7 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
   );
 }
 
-function VoiceCallStatusCard({ resultId }: { resultId: string }) {
+function VoiceCallStatusCard({ resultId, result }: { resultId: string; result?: AnalysisResult | null }) {
   const [callData, setCallData] = useState<{ call: VoiceCallResult | null; agentDecisions: string[] } | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [retryStatus, setRetryStatus] = useState<string | null>(null);
@@ -169,7 +176,13 @@ function VoiceCallStatusCard({ resultId }: { resultId: string }) {
       const res = await fetch('/api/voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resultId }),
+        body: JSON.stringify({
+          resultId,
+          script: callData?.call?.script || '',
+          companyName: result?.company?.name,
+          productContext: result?.spec ? `Product: ${result.spec.name}\n${result.spec.description || ''}` : '',
+          reasoning: callData?.call?.agentReasoning,
+        }),
       });
       const data = await res.json();
       if (data.error) {
@@ -495,6 +508,7 @@ function ResultsContent() {
                     key={type}
                     artifact={artifact}
                     resultId={result.id}
+                    result={result}
                     onMarkSent={() => handleMarkSent(result.artifacts.indexOf(artifact))}
                   />
                 );
@@ -517,7 +531,7 @@ function ResultsContent() {
         </div>
 
         {/* Voice call status */}
-        <VoiceCallStatusCard resultId={result.id} />
+        <VoiceCallStatusCard resultId={result.id} result={result} />
 
         {/* Actions */}
         <div className="flex flex-wrap gap-3 justify-center pt-6 border-t border-anthropic-border">
