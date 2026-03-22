@@ -11,6 +11,9 @@ const WEIGHTS: Record<string, number> = {
   email_sent: 5,
   email_opened: 15,
   page_view: 5,
+  voice_call_placed: 10,       // call was placed
+  voicemail_delivered: 20,     // voicemail successfully delivered
+  voicemail_listened: 35,      // prospect listened to voicemail — strong signal
 };
 
 /** Extra weight for repeated engagement */
@@ -87,6 +90,9 @@ export function computeLeadScores(events: TrackingEvent[]): LeadScore[] {
       if (type === 'demo_viewed') signals.unshift(`${count} demo view${count > 1 ? 's' : ''}`);
       else if (type === 'api_playground') signals.push(`${count} API interaction${count > 1 ? 's' : ''}`);
       else if (type === 'time_on_page') signals.push('Spent 2+ min on page');
+      else if (type === 'voice_call_placed') signals.push('Voicemail sent');
+      else if (type === 'voicemail_delivered') signals.push('Voicemail delivered');
+      else if (type === 'voicemail_listened') signals.push('Listened to voicemail');
     }
 
     // Cap at 100

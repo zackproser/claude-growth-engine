@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAndParseSpec } from '@/lib/spec-parser';
-import { runGrowthAgent } from '@/lib/agent';
+import { runCompanyResearch, generateAllArtifacts } from '@/lib/agent';
 import { logNewLead, isSheetsConfigured } from '@/lib/sheets';
+import type { AnalysisResult } from '@/lib/types';
+import { randomUUID } from 'crypto';
 
 // In-memory store for results
-const resultsStore = new Map<string, unknown>();
+const resultsStore = new Map<string, AnalysisResult>();
 
 export { resultsStore };
 
@@ -14,47 +16,80 @@ export async function POST(request: NextRequest) {
     const { rawSpec, targetUrl, stream: useStream } = body;
 
     if (!rawSpec || !targetUrl) {
-      return NextResponse.json(
-        { error: 'Missing rawSpec or targetUrl' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing rawSpec or targetUrl' }, { status: 400 });
     }
 
-    // Validate the spec
     const validation = await validateAndParseSpec(rawSpec);
     if (!validation.valid || !validation.parsed) {
-      return NextResponse.json(
-        { error: 'Invalid OpenAPI spec', details: validation.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid OpenAPI spec', details: validation.errors }, { status: 400 });
     }
 
-    // If streaming requested, use SSE
+    const spec = validation.parsed;
+
     if (useStream) {
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
+          let controllerClosed = false;
           const send = (event: string, data: unknown) => {
-            controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+            if (controllerClosed) return;
+            try {
+              controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+            } catch {
+              controllerClosed = true;
+            }
           };
 
           try {
-            const result = await runGrowthAgent(validation.parsed!, targetUrl, (phase) => {
+            const id = randomUUID();
+
+            // Phase 1: Company Research (~60-90s)
+            const company = await runCompanyResearch(spec, targetUrl, (phase) => {
               send('progress', phase);
             });
 
-            resultsStore.set(result.id, result);
+            // Create partial result and store it immediately
+            const partialResult: AnalysisResult = {
+              id,
+              createdAt: new Date().toISOString(),
+              spec,
+              company,
+              artifacts: [],
+              demoPageUrl: `/demo/${id}`,
+            };
+            resultsStore.set(id, partialResult);
 
-            // Log lead to Google Sheets
+            // Send result event — this triggers navigation to results page
+            send('result', partialResult);
+            send('progress', { step: 'Generating personalized outreach...', detail: '5 artifacts in parallel' });
+
+            // Phase 2: Parallel Artifact Generation (~15-20s)
+            const { artifacts, voicemailReasoning } = await generateAllArtifacts(
+              spec,
+              company,
+              (artifact) => {
+                // Update stored result as each artifact arrives
+                partialResult.artifacts.push(artifact);
+                resultsStore.set(id, partialResult);
+                send('artifact_ready', artifact);
+              }
+            );
+
+            // Final update with all artifacts
+            partialResult.artifacts = artifacts;
+            partialResult.voicemailReasoning = voicemailReasoning;
+            resultsStore.set(id, partialResult);
+
+            send('all_done', partialResult);
+
             if (isSheetsConfigured()) {
-              logNewLead(result.company, result.demoPageUrl, result.artifacts.length)
+              logNewLead(company, partialResult.demoPageUrl, artifacts.length)
                 .catch(err => console.error('[Analyze] Sheets lead log failed:', err));
             }
-
-            send('result', result);
           } catch (err) {
             send('error', { error: err instanceof Error ? err.message : 'Analysis failed' });
           } finally {
+            controllerClosed = true;
             controller.close();
           }
         },
@@ -69,22 +104,31 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Non-streaming fallback
-    const result = await runGrowthAgent(validation.parsed, targetUrl);
-    resultsStore.set(result.id, result);
+    // Non-streaming fallback — runs both phases sequentially
+    const id = randomUUID();
+    const company = await runCompanyResearch(spec, targetUrl);
+    const { artifacts, voicemailReasoning } = await generateAllArtifacts(spec, company);
+
+    const result: AnalysisResult = {
+      id,
+      createdAt: new Date().toISOString(),
+      spec,
+      company,
+      artifacts,
+      demoPageUrl: `/demo/${id}`,
+      voicemailReasoning,
+    };
+    resultsStore.set(id, result);
 
     if (isSheetsConfigured()) {
-      logNewLead(result.company, result.demoPageUrl, result.artifacts.length)
+      logNewLead(company, result.demoPageUrl, artifacts.length)
         .catch(err => console.error('[Analyze] Sheets lead log failed:', err));
     }
 
     return NextResponse.json(result);
   } catch (err) {
     console.error('Analysis failed:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Analysis failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Analysis failed' }, { status: 500 });
   }
 }
 
