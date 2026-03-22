@@ -113,4 +113,127 @@ describe('Lead Scoring', () => {
     const scores = computeLeadScores(events);
     expect(scores[0].companyUrl).toBe('https://high.com');
   });
+
+  describe('voice event signal summaries', () => {
+    test('voice_call_placed produces "Voicemail sent" signal', () => {
+      const events = [makeEvent({ eventType: 'voice_call_placed' })];
+      const scores = computeLeadScores(events);
+      expect(scores[0].signals).toContain('Voicemail sent');
+    });
+
+    test('voicemail_delivered produces "Voicemail delivered" signal', () => {
+      const events = [makeEvent({ eventType: 'voicemail_delivered' })];
+      const scores = computeLeadScores(events);
+      expect(scores[0].signals).toContain('Voicemail delivered');
+    });
+
+    test('voicemail_listened produces "Listened to voicemail" signal', () => {
+      const events = [makeEvent({ eventType: 'voicemail_listened' })];
+      const scores = computeLeadScores(events);
+      expect(scores[0].signals).toContain('Listened to voicemail');
+    });
+
+    test('voice_call_placed has weight 10', () => {
+      const events = [makeEvent({ eventType: 'voice_call_placed' })];
+      const scores = computeLeadScores(events);
+      expect(scores[0].score).toBe(10);
+    });
+
+    test('voicemail_delivered has weight 20', () => {
+      const events = [makeEvent({ eventType: 'voicemail_delivered' })];
+      const scores = computeLeadScores(events);
+      expect(scores[0].score).toBe(20);
+    });
+
+    test('voicemail_listened has weight 35', () => {
+      const events = [makeEvent({ eventType: 'voicemail_listened' })];
+      const scores = computeLeadScores(events);
+      expect(scores[0].score).toBe(35);
+    });
+  });
+
+  describe('mixed voice + non-voice events', () => {
+    test('combines voice and web signals for same company', () => {
+      const events = [
+        makeEvent({ eventType: 'demo_viewed', companyUrl: 'https://mixed.com' }),
+        makeEvent({ eventType: 'voice_call_placed', companyUrl: 'https://mixed.com' }),
+        makeEvent({ eventType: 'voicemail_delivered', companyUrl: 'https://mixed.com' }),
+        makeEvent({ eventType: 'api_playground', companyUrl: 'https://mixed.com' }),
+      ];
+      const scores = computeLeadScores(events);
+      expect(scores).toHaveLength(1);
+      // demo_viewed(10) + voice_call_placed(10) + voicemail_delivered(20) + api_playground(20) = 60
+      expect(scores[0].score).toBe(60);
+      expect(scores[0].temperature).toBe('warm');
+      expect(scores[0].signals).toContain('Voicemail sent');
+      expect(scores[0].signals).toContain('Voicemail delivered');
+    });
+
+    test('voice + web pushes lead to hot when combined', () => {
+      const events = [
+        makeEvent({ eventType: 'voicemail_listened', companyUrl: 'https://hot.com' }),
+        makeEvent({ eventType: 'feedback_submitted', companyUrl: 'https://hot.com', metadata: { feedback: 'amazing' } }),
+        makeEvent({ eventType: 'lang_selected', companyUrl: 'https://hot.com', metadata: { language: 'Python' } }),
+      ];
+      const scores = computeLeadScores(events);
+      // voicemail_listened(35) + feedback_submitted(30) + lang_selected(25) = 90
+      expect(scores[0].score).toBe(90);
+      expect(scores[0].temperature).toBe('hot');
+      expect(scores[0].signals).toContain('Listened to voicemail');
+      expect(scores[0].signals).toContain('Uses Python');
+    });
+
+    test('voice events for different companies scored separately', () => {
+      const events = [
+        makeEvent({ eventType: 'voice_call_placed', companyUrl: 'https://a.com' }),
+        makeEvent({ eventType: 'voicemail_listened', companyUrl: 'https://b.com' }),
+      ];
+      const scores = computeLeadScores(events);
+      expect(scores).toHaveLength(2);
+      // Sorted descending: b.com (35) first, a.com (10) second
+      expect(scores[0].companyUrl).toBe('https://b.com');
+      expect(scores[0].score).toBe(35);
+      expect(scores[1].companyUrl).toBe('https://a.com');
+      expect(scores[1].score).toBe(10);
+    });
+  });
+
+  describe('lang_selected edge cases', () => {
+    test('lang_selected without metadata.language does not add language signal', () => {
+      const events = [makeEvent({ eventType: 'lang_selected' })];
+      const scores = computeLeadScores(events);
+      expect(scores[0].score).toBe(25);
+      // Should not have a "Uses ..." signal since no language metadata
+      const langSignals = scores[0].signals.filter(s => s.startsWith('Uses '));
+      expect(langSignals).toHaveLength(0);
+    });
+
+    test('lang_selected with metadata.language adds "Uses <lang>" signal', () => {
+      const events = [makeEvent({ eventType: 'lang_selected', metadata: { language: 'Go' } })];
+      const scores = computeLeadScores(events);
+      expect(scores[0].signals).toContain('Uses Go');
+    });
+
+    test('multiple lang_selected for same language does not duplicate signal', () => {
+      const events = [
+        makeEvent({ eventType: 'lang_selected', metadata: { language: 'Rust' } }),
+        makeEvent({ eventType: 'lang_selected', metadata: { language: 'Rust' } }),
+      ];
+      const scores = computeLeadScores(events);
+      const rustSignals = scores[0].signals.filter(s => s === 'Uses Rust');
+      expect(rustSignals).toHaveLength(1);
+      // 25 + 25 + 5 (repeat bonus) = 55
+      expect(scores[0].score).toBe(55);
+    });
+
+    test('multiple lang_selected for different languages adds both signals', () => {
+      const events = [
+        makeEvent({ eventType: 'lang_selected', metadata: { language: 'Python' } }),
+        makeEvent({ eventType: 'lang_selected', metadata: { language: 'TypeScript' } }),
+      ];
+      const scores = computeLeadScores(events);
+      expect(scores[0].signals).toContain('Uses Python');
+      expect(scores[0].signals).toContain('Uses TypeScript');
+    });
+  });
 });
