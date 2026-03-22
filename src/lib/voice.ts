@@ -11,6 +11,8 @@ function getClient(): ElevenLabsClient {
   return new ElevenLabsClient({ apiKey });
 }
 
+import { addTrackingEvent } from './tracking';
+
 export function isVoiceConfigured(): boolean {
   return Boolean(
     process.env.ELEVENLABS_API_KEY &&
@@ -252,6 +254,9 @@ export async function placeVoiceCall(
     voiceCallStore.set(resultId, callResult);
     emit('completed');
 
+    // Track the call as an engagement event
+    addTrackingEvent(resultId, '', 'voice_call_placed', { callId: callResult.callId || '' });
+
     console.log('[Voice] Call placed:', {
       resultId,
       callId: callResult.callId,
@@ -278,6 +283,10 @@ export async function placeVoiceCall(
           callResult.callSuccessful = transcriptData.successful;
           voiceCallStore.set(resultId, callResult);
           logAgentDecision(resultId, `Transcript captured: ${transcriptData.transcript.length} messages, ${transcriptData.duration}s`);
+          addTrackingEvent(resultId, '', 'voicemail_delivered', {
+            duration: String(transcriptData.duration),
+            messages: String(transcriptData.transcript.length),
+          });
 
           // Generate insights from the conversation
           logAgentDecision(resultId, 'Analyzing call for new insights...');

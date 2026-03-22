@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { TrackingEvent } from '@/lib/types';
 import { logTrackingEvent, isSheetsConfigured } from '@/lib/sheets';
-
-// In-memory event store (always kept as fallback + fast reads)
-const events: TrackingEvent[] = [];
+import { events } from '@/lib/tracking';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,9 +11,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[Track]', event.eventType, event.companyUrl, event.metadata);
 
-    // Write to Google Sheets if configured
     if (isSheetsConfigured()) {
-      // Fire and forget — don't block the response on Sheets write
       logTrackingEvent(
         event.resultId,
         event.companyUrl,
