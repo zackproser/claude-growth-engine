@@ -159,6 +159,30 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
 
 function VoiceCallStatusCard({ resultId }: { resultId: string }) {
   const [callData, setCallData] = useState<{ call: VoiceCallResult | null; agentDecisions: string[] } | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [retryStatus, setRetryStatus] = useState<string | null>(null);
+
+  const handleRetryCall = async () => {
+    setRetrying(true);
+    setRetryStatus('Placing call...');
+    try {
+      const res = await fetch('/api/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resultId }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setRetryStatus(`Failed: ${data.error}`);
+      } else {
+        setRetryStatus('Call placed — answer your phone!');
+      }
+    } catch {
+      setRetryStatus('Call failed');
+    } finally {
+      setTimeout(() => { setRetrying(false); setRetryStatus(null); }, 5000);
+    }
+  };
 
   useEffect(() => {
     const fetchVoice = () => {
@@ -200,7 +224,20 @@ function VoiceCallStatusCard({ resultId }: { resultId: string }) {
             </div>
           </div>
         </div>
-        <span className="text-xs text-text-muted font-mono">{call.phoneNumberCalled}</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRetryCall}
+            disabled={retrying}
+            className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${
+              retrying
+                ? 'bg-primary/20 text-primary cursor-wait'
+                : 'bg-text-dark hover:bg-text-dark/90 text-white'
+            }`}
+          >
+            {retrying ? retryStatus : '📞 Call Again'}
+          </button>
+          <span className="text-xs text-text-muted font-mono">{call.phoneNumberCalled}</span>
+        </div>
       </div>
 
       {/* Script preview */}
