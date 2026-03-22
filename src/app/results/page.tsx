@@ -13,6 +13,30 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
 }) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [calling, setCalling] = useState(false);
+  const [callStatus, setCallStatus] = useState<string | null>(null);
+
+  const handlePlaceCall = async () => {
+    setCalling(true);
+    setCallStatus('Placing call...');
+    try {
+      const res = await fetch('/api/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resultId }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setCallStatus(`Failed: ${data.error}`);
+      } else {
+        setCallStatus('Call placed — answer your phone!');
+      }
+    } catch {
+      setCallStatus('Call failed');
+    } finally {
+      setTimeout(() => setCalling(false), 3000);
+    }
+  };
 
   const config: Record<string, { icon: string; label: string; color: string; actionLabel?: string }> = {
     'cold-email': { icon: '📧', label: 'Cold Email', color: 'border-anthropic-border bg-white', actionLabel: '✉️ Mark as Sent' },
@@ -57,6 +81,19 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
               className="text-xs bg-light-alt hover:bg-warm-gray text-text-muted px-3 py-1.5 rounded-md transition-colors"
             >
               {copied ? '✓ Copied' : '📋 Copy'}
+            </button>
+          )}
+          {artifact.type === 'voicemail-script' && (
+            <button
+              onClick={handlePlaceCall}
+              disabled={calling}
+              className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${
+                calling
+                  ? 'bg-primary/20 text-primary cursor-wait'
+                  : 'bg-text-dark hover:bg-text-dark/90 text-white'
+              }`}
+            >
+              {calling ? callStatus : '📞 Place Call'}
             </button>
           )}
           {artifact.type === 'demo-page' ? (

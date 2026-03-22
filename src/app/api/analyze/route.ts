@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateAndParseSpec } from '@/lib/spec-parser';
 import { runGrowthAgent } from '@/lib/agent';
 import { logNewLead, isSheetsConfigured } from '@/lib/sheets';
-import { placeVoiceCall, logAgentDecision, isVoiceConfigured } from '@/lib/voice';
+// Voice call is now triggered manually via /api/voice/call
 
 // In-memory store for results
 const resultsStore = new Map<string, unknown>();
@@ -58,40 +58,6 @@ export async function POST(request: NextRequest) {
                 .catch(err => console.error('[Analyze] Sheets lead log failed:', err));
             }
 
-            // Auto-place voice call if configured
-            if (isVoiceConfigured()) {
-              const voicemailArtifact = result.artifacts.find(a => a.type === 'voicemail-script');
-              if (voicemailArtifact) {
-                const reasoning = result.voicemailReasoning || 'Personalized voicemail based on prospect analysis.';
-                logAgentDecision(result.id, `Voicemail strategy: ${reasoning}`);
-                logAgentDecision(result.id, `Script generated (${voicemailArtifact.content.length} chars)`);
-
-                send('progress', { step: 'Generating voicemail...', detail: 'Placing outbound call via ElevenLabs' });
-
-                try {
-                  // Build product context from spec for the voice agent
-                  const productContext = `Product: ${result.spec.name}\n${result.spec.description || ''}\nEndpoints: ${result.spec.endpoints.slice(0, 10).map(e => `${e.method} ${e.path}${e.summary ? ' — ' + e.summary : ''}`).join('\n')}`;
-
-                  const callResult = await placeVoiceCall(
-                    result.id,
-                    voicemailArtifact.content,
-                    reasoning,
-                    (status) => {
-                      send('progress', { step: `Voice call: ${status.replace(/_/g, ' ')}` });
-                    },
-                    result.company.name,
-                    productContext
-                  );
-                  logAgentDecision(result.id, `Call ${callResult.status}: ${callResult.callId || 'no call ID'}`);
-                  send('voice_update', callResult);
-                } catch (err) {
-                  const errMsg = err instanceof Error ? err.message : 'Voice call failed';
-                  logAgentDecision(result.id, `Call failed: ${errMsg}`);
-                  send('voice_error', { error: errMsg });
-                }
-              }
-            }
-
             send('result', result);
           } catch (err) {
             send('error', { error: err instanceof Error ? err.message : 'Analysis failed' });
@@ -118,22 +84,6 @@ export async function POST(request: NextRequest) {
     if (isSheetsConfigured()) {
       logNewLead(result.company, result.demoPageUrl, result.artifacts.length)
         .catch(err => console.error('[Analyze] Sheets lead log failed:', err));
-    }
-
-    // Auto-place voice call if configured
-    if (isVoiceConfigured()) {
-      const voicemailArtifact = result.artifacts.find(a => a.type === 'voicemail-script');
-      if (voicemailArtifact) {
-        const reasoning = result.voicemailReasoning || 'Personalized voicemail based on prospect analysis.';
-        logAgentDecision(result.id, `Voicemail strategy: ${reasoning}`);
-        try {
-          const productCtx = `Product: ${result.spec.name}\n${result.spec.description || ''}\nEndpoints: ${result.spec.endpoints.slice(0, 10).map(e => `${e.method} ${e.path}${e.summary ? ' — ' + e.summary : ''}`).join('\n')}`;
-          const callResult = await placeVoiceCall(result.id, voicemailArtifact.content, reasoning, undefined, result.company.name, productCtx);
-          logAgentDecision(result.id, `Call ${callResult.status}: ${callResult.callId || 'no call ID'}`);
-        } catch (err) {
-          logAgentDecision(result.id, `Call failed: ${err instanceof Error ? err.message : 'Unknown'}`);
-        }
-      }
     }
 
     return NextResponse.json(result);
