@@ -126,8 +126,31 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
       </div>
 
       {expanded && (
-        <div className="mt-3 bg-cream rounded-lg p-4 text-sm text-text-muted prose prose-sm max-w-none">
-          <ReactMarkdown>{artifact.content}</ReactMarkdown>
+        <div className="mt-3 bg-cream rounded-lg p-4 text-sm text-text-muted max-w-none overflow-hidden">
+          {(artifact.type === 'value-prop' || artifact.type === 'demo-page') ? (
+            (() => {
+              try {
+                const parsed = JSON.parse(artifact.content);
+                if (Array.isArray(parsed)) {
+                  return (
+                    <div className="space-y-3">
+                      {parsed.map((item: Record<string, string>, i: number) => (
+                        <div key={i} className="bg-white rounded-lg p-3 border border-anthropic-border">
+                          <p className="text-sm font-semibold text-text-dark mb-1">{item.headline || item.painPoint}</p>
+                          {item.endpoint && <code className="text-xs bg-light-alt text-primary px-1.5 py-0.5 rounded font-mono">{item.endpoint}</code>}
+                          {item.endpointPath && <code className="text-xs bg-light-alt text-primary px-1.5 py-0.5 rounded font-mono">{item.endpointMethod} {item.endpointPath}</code>}
+                          <p className="text-sm text-text-muted mt-1">{item.body || item.solution}</p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+              } catch { /* not valid JSON, fall through to markdown */ }
+              return <div className="prose prose-sm max-w-none"><ReactMarkdown>{artifact.content}</ReactMarkdown></div>;
+            })()
+          ) : (
+            <div className="prose prose-sm max-w-none"><ReactMarkdown>{artifact.content}</ReactMarkdown></div>
+          )}
         </div>
       )}
     </div>
@@ -399,34 +422,40 @@ function ResultsContent() {
         {/* Artifact cards */}
         <div className="space-y-3 mb-10">
           <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-2">
-            {result.artifacts.length === 0 ? 'Generating artifacts...' : 'Your artifacts — ready to use'}
+            {result.artifacts.length >= 5 ? 'Your artifacts — ready to use' : 'Generating artifacts...'}
           </h2>
-          {result.artifacts.length === 0 ? (
-            // Skeleton loaders while Phase 2 runs
-            <div className="space-y-3">
-              {['Cold Email', 'Value Proposition', 'Demo Page', 'LinkedIn Message', 'Voicemail Script'].map((name) => (
-                <div key={name} className="rounded-xl border border-anthropic-border bg-white p-5 animate-pulse">
+          {(() => {
+            const allTypes = ['cold-email', 'value-prop', 'demo-page', 'linkedin-message', 'voicemail-script'] as const;
+            const typeLabels: Record<string, string> = { 'cold-email': 'Cold Email', 'value-prop': 'Value Proposition', 'demo-page': 'Demo Page', 'linkedin-message': 'LinkedIn Message', 'voicemail-script': 'Voicemail Script' };
+            const arrivedTypes = new Set(result.artifacts.map(a => a.type));
+
+            return allTypes.map((type) => {
+              const artifact = result.artifacts.find(a => a.type === type);
+              if (artifact) {
+                return (
+                  <ArtifactCard
+                    key={type}
+                    artifact={artifact}
+                    resultId={result.id}
+                    onMarkSent={() => handleMarkSent(result.artifacts.indexOf(artifact))}
+                  />
+                );
+              }
+              // Skeleton for not-yet-arrived artifact
+              return (
+                <div key={type} className="rounded-xl border border-anthropic-border bg-white p-5 animate-pulse">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-light-alt" />
                     <div>
                       <div className="h-4 w-32 bg-light-alt rounded mb-1" />
                       <div className="h-3 w-20 bg-light-alt rounded" />
                     </div>
-                    <span className="ml-auto text-xs text-text-muted">{name}</span>
+                    <span className="ml-auto text-xs text-text-muted">{typeLabels[type]}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            result.artifacts.map((artifact, i) => (
-              <ArtifactCard
-                key={i}
-                artifact={artifact}
-                resultId={result.id}
-                onMarkSent={() => handleMarkSent(i)}
-              />
-            ))
-          )}
+              );
+            });
+          })()}
         </div>
 
         {/* Voice call status */}
