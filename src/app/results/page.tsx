@@ -218,7 +218,7 @@ function VoiceCallStatusCard({ resultId, result }: { resultId: string; result?: 
     placing_call: { label: 'Placing call...', color: 'text-primary', pulse: true },
     ringing: { label: 'Ringing...', color: 'text-primary', pulse: true },
     in_progress: { label: 'Call in progress', color: 'text-green-600', pulse: true },
-    completed: { label: 'Voicemail delivered', color: 'text-green-600' },
+    completed: { label: 'Call placed', color: 'text-green-600' },
     failed: { label: 'Call failed', color: 'text-red-600' },
     no_answer: { label: 'No answer', color: 'text-gray-600' },
   };
