@@ -25,7 +25,7 @@ export function isVoiceConfigured(): boolean {
  * Configured for live conversation — delivers the pitch, handles objections,
  * probes for additional pain points.
  */
-async function createAgentForCall(script: string): Promise<string> {
+async function createAgentForCall(script: string, productContext?: string): Promise<string> {
   const client = getClient();
   const voiceId = process.env.ELEVENLABS_VOICE_ID!;
 
@@ -53,10 +53,15 @@ async function createAgentForCall(script: string): Promise<string> {
         prompt: {
           prompt: `You are a startup founder making a personalized sales call to a potential customer. You just delivered your opening pitch (the first message). Now engage in natural conversation.
 
+${productContext ? `YOUR PRODUCT:
+${productContext}
+
+CRITICAL: Only reference features and capabilities described above. Do NOT make up features, describe services not listed, or guess what the product does. If asked about something not covered above, say "I'd love to walk you through that on a demo call" and move on.` : ''}
+
 RULES:
 - You already delivered your pitch. If they respond, engage naturally.
-- If they ask questions, answer confidently based on what you know about your product.
-- If they push back or raise objections, acknowledge their concern and reframe how the product helps.
+- If they ask questions, answer ONLY using information from the product description above.
+- If they push back or raise objections, acknowledge their concern and reframe how the product helps using specific features from the product description.
 - Listen for NEW pain points they mention that weren't in your original pitch — these are gold. Probe deeper on these.
 - Keep responses concise — 2-3 sentences max. This is a phone call, not an email.
 - Sound natural, warm, and confident — like a real founder who genuinely believes in their product.
@@ -94,8 +99,8 @@ async function fetchCallTranscript(conversationId: string): Promise<{
   successful: boolean;
 } | null> {
   const apiKey = process.env.ELEVENLABS_API_KEY!;
-  const maxRetries = 6;
-  const retryDelay = 10_000; // 10 seconds between retries
+  const maxRetries = 12;
+  const retryDelay = 5_000; // 5 seconds between retries
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -197,7 +202,8 @@ export async function placeVoiceCall(
   script: string,
   agentReasoning: string,
   onStatusChange?: (status: VoiceCallStatus) => void,
-  companyName?: string
+  companyName?: string,
+  productContext?: string
 ): Promise<VoiceCallResult> {
   const phoneNumber = process.env.DEMO_PHONE_NUMBER!;
   const phoneNumberId = process.env.ELEVENLABS_PHONE_NUMBER_ID!;
@@ -216,7 +222,7 @@ export async function placeVoiceCall(
   emit('creating_agent');
 
   try {
-    const agentId = await createAgentForCall(script);
+    const agentId = await createAgentForCall(script, productContext);
     callResult.elevenlabsAgentId = agentId;
 
     callResult.status = 'placing_call';
@@ -260,8 +266,8 @@ export async function placeVoiceCall(
       // Don't await — let this run in the background
       (async () => {
         // Wait for the call to actually finish (it's still in progress when we get here)
-        console.log('[Voice] Waiting 60s before fetching transcript...');
-        await new Promise(r => setTimeout(r, 60_000));
+        console.log('[Voice] Waiting 20s before fetching transcript...');
+        await new Promise(r => setTimeout(r, 20_000));
 
         logAgentDecision(resultId, 'Fetching call transcript...');
         const transcriptData = await fetchCallTranscript(convId);

@@ -69,6 +69,9 @@ export async function POST(request: NextRequest) {
                 send('progress', { step: 'Generating voicemail...', detail: 'Placing outbound call via ElevenLabs' });
 
                 try {
+                  // Build product context from spec for the voice agent
+                  const productContext = `Product: ${result.spec.name}\n${result.spec.description || ''}\nEndpoints: ${result.spec.endpoints.slice(0, 10).map(e => `${e.method} ${e.path}${e.summary ? ' — ' + e.summary : ''}`).join('\n')}`;
+
                   const callResult = await placeVoiceCall(
                     result.id,
                     voicemailArtifact.content,
@@ -76,7 +79,8 @@ export async function POST(request: NextRequest) {
                     (status) => {
                       send('progress', { step: `Voice call: ${status.replace(/_/g, ' ')}` });
                     },
-                    result.company.name
+                    result.company.name,
+                    productContext
                   );
                   logAgentDecision(result.id, `Call ${callResult.status}: ${callResult.callId || 'no call ID'}`);
                   send('voice_update', callResult);
@@ -123,7 +127,8 @@ export async function POST(request: NextRequest) {
         const reasoning = result.voicemailReasoning || 'Personalized voicemail based on prospect analysis.';
         logAgentDecision(result.id, `Voicemail strategy: ${reasoning}`);
         try {
-          const callResult = await placeVoiceCall(result.id, voicemailArtifact.content, reasoning, undefined, result.company.name);
+          const productCtx = `Product: ${result.spec.name}\n${result.spec.description || ''}\nEndpoints: ${result.spec.endpoints.slice(0, 10).map(e => `${e.method} ${e.path}${e.summary ? ' — ' + e.summary : ''}`).join('\n')}`;
+          const callResult = await placeVoiceCall(result.id, voicemailArtifact.content, reasoning, undefined, result.company.name, productCtx);
           logAgentDecision(result.id, `Call ${callResult.status}: ${callResult.callId || 'no call ID'}`);
         } catch (err) {
           logAgentDecision(result.id, `Call failed: ${err instanceof Error ? err.message : 'Unknown'}`);
