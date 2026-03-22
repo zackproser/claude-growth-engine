@@ -289,11 +289,28 @@ function ResultsContent() {
       return;
     }
 
+    // Initial load
     fetch(`/api/analyze?id=${id}`)
       .then(res => res.json())
       .then(data => { if (data.error) setError(data.error); else setResult(data); })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+
+    // Poll for artifact updates (Phase 2 fills them in)
+    const interval = setInterval(() => {
+      fetch(`/api/analyze?id=${id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error && data.artifacts?.length > 0) {
+            setResult(data);
+            // Stop polling once we have all 5 artifacts
+            if (data.artifacts.length >= 5) clearInterval(interval);
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [searchParams]);
 
   if (loading) {
@@ -381,15 +398,35 @@ function ResultsContent() {
 
         {/* Artifact cards */}
         <div className="space-y-3 mb-10">
-          <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-2">Your artifacts — ready to use</h2>
-          {result.artifacts.map((artifact, i) => (
-            <ArtifactCard
-              key={i}
-              artifact={artifact}
-              resultId={result.id}
-              onMarkSent={() => handleMarkSent(i)}
-            />
-          ))}
+          <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-2">
+            {result.artifacts.length === 0 ? 'Generating artifacts...' : 'Your artifacts — ready to use'}
+          </h2>
+          {result.artifacts.length === 0 ? (
+            // Skeleton loaders while Phase 2 runs
+            <div className="space-y-3">
+              {['Cold Email', 'Value Proposition', 'Demo Page', 'LinkedIn Message', 'Voicemail Script'].map((name) => (
+                <div key={name} className="rounded-xl border border-anthropic-border bg-white p-5 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-light-alt" />
+                    <div>
+                      <div className="h-4 w-32 bg-light-alt rounded mb-1" />
+                      <div className="h-3 w-20 bg-light-alt rounded" />
+                    </div>
+                    <span className="ml-auto text-xs text-text-muted">{name}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            result.artifacts.map((artifact, i) => (
+              <ArtifactCard
+                key={i}
+                artifact={artifact}
+                resultId={result.id}
+                onMarkSent={() => handleMarkSent(i)}
+              />
+            ))
+          )}
         </div>
 
         {/* Voice call status */}
