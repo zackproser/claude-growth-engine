@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
 import type { LeadScore, TrackingEvent, VoiceCallResult } from '@/lib/types';
 
 const TEMP_CONFIG = {
@@ -293,11 +294,62 @@ export default function TrackingPage() {
 
                   {/* Decision log */}
                   {call.agentDecisions.length > 0 && (
-                    <div className="space-y-1">
+                    <div className="space-y-1 mb-3">
                       <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Decision Log</p>
                       {call.agentDecisions.map((d, i) => (
                         <p key={i} className="text-xs text-text-muted font-mono">{d}</p>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Call Transcript */}
+                  {call.transcript && call.transcript.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        {call.callDurationSecs != null && (
+                          <span className="text-xs bg-light-alt text-text-muted px-2 py-0.5 rounded-full border border-anthropic-border">
+                            {Math.floor(call.callDurationSecs / 60)}:{String(call.callDurationSecs % 60).padStart(2, '0')}
+                          </span>
+                        )}
+                        {call.callSuccessful != null && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full border ${call.callSuccessful ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                            {call.callSuccessful ? 'Successful' : 'Unsuccessful'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="bg-cream rounded-lg p-3 border border-anthropic-border">
+                        <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <span>📞</span> Call Transcript
+                        </p>
+                        <div className="space-y-2">
+                          {call.transcript.map((entry, i) => (
+                            <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
+                                entry.role === 'agent'
+                                  ? 'bg-cream text-text-dark'
+                                  : 'bg-white text-text-dark border border-anthropic-border'
+                              }`}>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
+                                  {entry.role === 'agent' ? 'Agent' : 'Prospect'}
+                                </p>
+                                {entry.message}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Call Insights */}
+                  {call.callInsights && (
+                    <div className="bg-light-alt rounded-lg p-4 mb-3 border-2 border-anthropic-border">
+                      <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span>💡</span> New Intelligence from Call
+                      </p>
+                      <div className="text-sm text-text-dark leading-relaxed prose prose-sm max-w-none">
+                        <ReactMarkdown>{call.callInsights}</ReactMarkdown>
+                      </div>
                     </div>
                   )}
 

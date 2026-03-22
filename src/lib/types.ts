@@ -66,6 +66,11 @@ export interface LeadScore {
 
 export type VoiceCallStatus = 'generating_script' | 'creating_agent' | 'placing_call' | 'ringing' | 'in_progress' | 'completed' | 'failed' | 'no_answer';
 
+export interface CallTranscriptEntry {
+  role: 'agent' | 'user';
+  message: string;
+}
+
 export interface VoiceCallResult {
   status: VoiceCallStatus;
   script: string;
@@ -77,6 +82,10 @@ export interface VoiceCallResult {
   startedAt: string;
   completedAt?: string;
   error?: string;
+  transcript?: CallTranscriptEntry[];
+  callInsights?: string;
+  callDurationSecs?: number;
+  callSuccessful?: boolean;
 }
 
 export interface AnalysisResultWithVoice extends AnalysisResult {

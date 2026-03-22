@@ -1,5 +1,5 @@
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
-import type { VoiceCallResult, VoiceCallStatus } from './types';
+import type { VoiceCallResult, VoiceCallStatus, CallTranscriptEntry } from './types';
 
 // In-memory stores
 const voiceCallStore = new Map<string, VoiceCallResult>();
@@ -21,16 +21,16 @@ export function isVoiceConfigured(): boolean {
 }
 
 /**
- * Create a fresh ElevenLabs agent for this specific call.
- * Each agent gets the actual voicemail script baked into its config
- * so voicemail detection delivers the correct personalized message.
+ * Create a fresh ElevenLabs Conversational AI agent for this call.
+ * Configured for live conversation — delivers the pitch, handles objections,
+ * probes for additional pain points.
  */
 async function createAgentForCall(script: string): Promise<string> {
   const client = getClient();
   const voiceId = process.env.ELEVENLABS_VOICE_ID!;
 
   const response = await client.conversationalAi.agents.create({
-    name: 'Growth Engine Voicemail Agent',
+    name: 'Growth Engine Sales Agent',
     platformSettings: {
       overrides: {
         conversationConfigOverride: {
@@ -48,56 +48,156 @@ async function createAgentForCall(script: string): Promise<string> {
         voiceId,
       },
       agent: {
-        firstMessage: '',
+        firstMessage: script,
         language: 'en',
         prompt: {
-          prompt: `You are a startup founder placing a call to leave a personalized voicemail.
+          prompt: `You are a startup founder making a personalized sales call to a potential customer. You just delivered your opening pitch (the first message). Now engage in natural conversation.
 
-CRITICAL RULES:
-- Do NOT speak first. Wait and listen to determine if a human answered or if it's a voicemail system.
-- If you hear a voicemail greeting (e.g., "leave a message", "I'll see if this person is available", beep, or any automated/recorded message), stay silent. The voicemail_detection tool will handle leaving the message automatically.
-- If a REAL PERSON answers and speaks to you conversationally, deliver this message exactly: "${script.replace(/"/g, '\\"')}"
-- After delivering to a real person, use the end_call tool.
-- Do NOT improvise, summarize, or shorten the message. Deliver it word for word.
-- Sound natural, warm, and confident — like a real founder, not a robot.`,
+RULES:
+- You already delivered your pitch. If they respond, engage naturally.
+- If they ask questions, answer confidently based on what you know about your product.
+- If they push back or raise objections, acknowledge their concern and reframe how the product helps.
+- Listen for NEW pain points they mention that weren't in your original pitch — these are gold. Probe deeper on these.
+- Keep responses concise — 2-3 sentences max. This is a phone call, not an email.
+- Sound natural, warm, and confident — like a real founder who genuinely believes in their product.
+- After 2-3 exchanges, wrap up: "I'll send you a personalized demo link. Would love to hear what you think."
+- Then use the end_call tool.
+- If they say they're not interested, be gracious: "Totally understand. I'll drop a demo link in your inbox just in case. Thanks for your time." Then end the call.`,
           builtInTools: {
             endCall: {
               name: 'end_call',
-              description: 'End the call after delivering the voicemail message.',
+              description: 'End the call after the conversation wraps up naturally.',
               params: {
                 systemToolType: 'end_call' as const,
-              },
-            },
-            voicemailDetection: {
-              name: 'voicemail_detection',
-              description: 'Detect if a voicemail system answered the call. Leave the personalized message.',
-              params: {
-                systemToolType: 'voicemail_detection' as const,
-                voicemailMessage: script,
               },
             },
           },
         },
       },
       conversation: {
-        maxDurationSeconds: 60,
+        maxDurationSeconds: 120,
       },
     },
   });
 
-  console.log('[Voice] Created agent for call:', response.agentId);
+  console.log('[Voice] Created conversational agent:', response.agentId);
   return response.agentId;
 }
 
 /**
- * Place an outbound voicemail call for a prospect.
- * Creates a fresh agent per call with the script baked into voicemailMessage.
+ * Fetch the full transcript from ElevenLabs after a call completes.
+ * Polls with retry since transcript may not be immediately available.
+ */
+async function fetchCallTranscript(conversationId: string): Promise<{
+  transcript: CallTranscriptEntry[];
+  duration: number;
+  successful: boolean;
+} | null> {
+  const apiKey = process.env.ELEVENLABS_API_KEY!;
+  const maxRetries = 6;
+  const retryDelay = 10_000; // 10 seconds between retries
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
+        { headers: { 'xi-api-key': apiKey } }
+      );
+
+      if (!res.ok) {
+        console.log(`[Voice] Transcript fetch attempt ${attempt + 1}: HTTP ${res.status}`);
+        await new Promise(r => setTimeout(r, retryDelay));
+        continue;
+      }
+
+      const data = await res.json();
+      const rawTranscript = data.transcript || [];
+
+      if (rawTranscript.length === 0) {
+        console.log(`[Voice] Transcript fetch attempt ${attempt + 1}: empty transcript, retrying...`);
+        await new Promise(r => setTimeout(r, retryDelay));
+        continue;
+      }
+
+      const transcript: CallTranscriptEntry[] = rawTranscript
+        .filter((t: Record<string, unknown>) => t.message)
+        .map((t: Record<string, unknown>) => ({
+          role: (t.role as string) === 'agent' ? 'agent' as const : 'user' as const,
+          message: t.message as string,
+        }));
+
+      return {
+        transcript,
+        duration: data.call_duration_secs || 0,
+        successful: data.analysis?.call_successful === 'success',
+      };
+    } catch (err) {
+      console.log(`[Voice] Transcript fetch attempt ${attempt + 1} error:`, err);
+      await new Promise(r => setTimeout(r, retryDelay));
+    }
+  }
+
+  console.log('[Voice] Failed to fetch transcript after all retries');
+  return null;
+}
+
+/**
+ * Generate call insights by analyzing the transcript with Claude.
+ */
+async function generateCallInsights(
+  transcript: CallTranscriptEntry[],
+  companyName: string
+): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return 'Unable to generate insights: no API key';
+
+  const transcriptText = transcript
+    .map(t => `${t.role === 'agent' ? 'Agent' : 'Prospect'}: ${t.message}`)
+    .join('\n');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: `Analyze this sales call transcript with ${companyName}. In 3-5 bullet points, extract:
+- New pain points discovered during the call (not from the website)
+- Objections raised and how they were handled
+- Interest level signals (what excited them, what fell flat)
+- Recommended next steps
+
+Transcript:
+${transcriptText}`,
+        }],
+      }),
+    });
+
+    if (!res.ok) return 'Insight generation failed';
+
+    const data = await res.json();
+    return data.content?.[0]?.text || 'No insights generated';
+  } catch {
+    return 'Insight generation failed';
+  }
+}
+
+/**
+ * Place an outbound call and asynchronously fetch transcript + insights after.
  */
 export async function placeVoiceCall(
   resultId: string,
   script: string,
   agentReasoning: string,
-  onStatusChange?: (status: VoiceCallStatus) => void
+  onStatusChange?: (status: VoiceCallStatus) => void,
+  companyName?: string
 ): Promise<VoiceCallResult> {
   const phoneNumber = process.env.DEMO_PHONE_NUMBER!;
   const phoneNumberId = process.env.ELEVENLABS_PHONE_NUMBER_ID!;
@@ -116,7 +216,6 @@ export async function placeVoiceCall(
   emit('creating_agent');
 
   try {
-    // Create a fresh agent with the script baked into voicemailMessage
     const agentId = await createAgentForCall(script);
     callResult.elevenlabsAgentId = agentId;
 
@@ -130,6 +229,9 @@ export async function placeVoiceCall(
       toNumber: phoneNumber,
       conversationInitiationClientData: {
         conversationConfigOverride: {
+          agent: {
+            firstMessage: script,
+          },
           tts: {
             voiceId,
           },
@@ -149,6 +251,44 @@ export async function placeVoiceCall(
       callId: callResult.callId,
       conversationId: callResult.conversationId,
     });
+
+    // Async: fetch transcript + generate insights after call completes
+    if (callResult.conversationId) {
+      const convId = callResult.conversationId;
+      const company = companyName || 'the prospect';
+
+      // Don't await — let this run in the background
+      (async () => {
+        // Wait for the call to actually finish (it's still in progress when we get here)
+        console.log('[Voice] Waiting 60s before fetching transcript...');
+        await new Promise(r => setTimeout(r, 60_000));
+
+        logAgentDecision(resultId, 'Fetching call transcript...');
+        const transcriptData = await fetchCallTranscript(convId);
+
+        if (transcriptData) {
+          callResult.transcript = transcriptData.transcript;
+          callResult.callDurationSecs = transcriptData.duration;
+          callResult.callSuccessful = transcriptData.successful;
+          voiceCallStore.set(resultId, callResult);
+          logAgentDecision(resultId, `Transcript captured: ${transcriptData.transcript.length} messages, ${transcriptData.duration}s`);
+
+          // Generate insights from the conversation
+          logAgentDecision(resultId, 'Analyzing call for new insights...');
+          const insights = await generateCallInsights(transcriptData.transcript, company);
+          callResult.callInsights = insights;
+          voiceCallStore.set(resultId, callResult);
+          logAgentDecision(resultId, 'Call insights generated');
+
+          console.log('[Voice] Transcript + insights stored for', resultId);
+        } else {
+          logAgentDecision(resultId, 'Could not fetch transcript — call may still be in progress');
+        }
+      })().catch(err => {
+        console.error('[Voice] Background transcript fetch failed:', err);
+        logAgentDecision(resultId, `Transcript fetch error: ${err instanceof Error ? err.message : 'Unknown'}`);
+      });
+    }
 
     return callResult;
   } catch (err) {
