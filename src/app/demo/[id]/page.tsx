@@ -14,12 +14,21 @@ interface ParsedCard {
 }
 
 function parseValueProp(content: string): ParsedCard[] {
+  // Try direct parse first
   try {
     const parsed = JSON.parse(content);
     if (Array.isArray(parsed)) return parsed;
-  } catch {
-    // not structured JSON — return empty, fallback to raw ReactMarkdown
+  } catch { /* not direct JSON */ }
+
+  // Try extracting JSON array from markdown fences or surrounding text
+  const arrayMatch = content.match(/\[[\s\S]*\]/);
+  if (arrayMatch) {
+    try {
+      const parsed = JSON.parse(arrayMatch[0]);
+      if (Array.isArray(parsed)) return parsed;
+    } catch { /* not valid JSON array */ }
   }
+
   return [];
 }
 
@@ -27,10 +36,16 @@ function ValuePropCards({ content }: { content: string }) {
   const cards = parseValueProp(content);
 
   if (cards.length === 0) {
+    // Don't show raw JSON — show a clean fallback
+    const looksLikeJson = content.trim().startsWith('[') || content.trim().startsWith('{');
     return (
       <div className="bg-cream rounded-2xl p-8 border border-anthropic-border">
         <div className="prose prose-sm max-w-none text-text-dark">
-          <ReactMarkdown>{content}</ReactMarkdown>
+          {looksLikeJson ? (
+            <p className="text-text-muted italic">Value proposition cards are being generated...</p>
+          ) : (
+            <ReactMarkdown>{content}</ReactMarkdown>
+          )}
         </div>
       </div>
     );
