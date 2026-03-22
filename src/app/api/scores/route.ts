@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { computeLeadScores } from '@/lib/scoring';
-import { events } from '@/lib/tracking';
+import { trackingEvents } from '@/app/api/track/route';
 
 export async function GET() {
-  const scores = computeLeadScores(events);
-  return NextResponse.json({ scores, eventCount: events.length });
+  const scores = computeLeadScores(trackingEvents);
+  return NextResponse.json({ scores, eventCount: trackingEvents.length });
 }

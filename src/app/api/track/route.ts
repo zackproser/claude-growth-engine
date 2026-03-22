@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { TrackingEvent } from '@/lib/types';
 import { logTrackingEvent, isSheetsConfigured } from '@/lib/sheets';
-import { events } from '@/lib/tracking';
+
+// In-memory event store — lives in this route module
+const events: TrackingEvent[] = [];
+
+// Export for direct access from other server modules
+export { events as trackingEvents };
 
 export async function POST(request: NextRequest) {
   try {

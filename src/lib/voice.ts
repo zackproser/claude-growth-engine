@@ -11,7 +11,19 @@ function getClient(): ElevenLabsClient {
   return new ElevenLabsClient({ apiKey });
 }
 
-import { addTrackingEvent } from './tracking';
+import { trackingEvents } from '@/app/api/track/route';
+import type { TrackingEvent } from './types';
+
+function trackVoiceEvent(resultId: string, companyUrl: string, eventType: TrackingEvent['eventType'], metadata?: Record<string, string>) {
+  trackingEvents.push({
+    resultId,
+    companyUrl,
+    eventType,
+    metadata,
+    timestamp: new Date().toISOString(),
+  });
+  console.log('[Track]', eventType, companyUrl, metadata);
+}
 
 export function isVoiceConfigured(): boolean {
   return Boolean(
@@ -255,7 +267,7 @@ export async function placeVoiceCall(
     emit('completed');
 
     // Track the call as an engagement event
-    addTrackingEvent(resultId, '', 'voice_call_placed', { callId: callResult.callId || '' });
+    trackVoiceEvent(resultId, '', 'voice_call_placed', { callId: callResult.callId || '' });
 
     console.log('[Voice] Call placed:', {
       resultId,
@@ -283,7 +295,7 @@ export async function placeVoiceCall(
           callResult.callSuccessful = transcriptData.successful;
           voiceCallStore.set(resultId, callResult);
           logAgentDecision(resultId, `Transcript captured: ${transcriptData.transcript.length} messages, ${transcriptData.duration}s`);
-          addTrackingEvent(resultId, '', 'voicemail_delivered', {
+          trackVoiceEvent(resultId, '', 'voicemail_delivered', {
             duration: String(transcriptData.duration),
             messages: String(transcriptData.transcript.length),
           });
