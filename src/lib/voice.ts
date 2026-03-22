@@ -214,7 +214,8 @@ export async function placeVoiceCall(
   agentReasoning: string,
   onStatusChange?: (status: VoiceCallStatus) => void,
   companyName?: string,
-  productContext?: string
+  productContext?: string,
+  companyUrl?: string
 ): Promise<VoiceCallResult> {
   const phoneNumber = process.env.DEMO_PHONE_NUMBER!;
   const phoneNumberId = process.env.ELEVENLABS_PHONE_NUMBER_ID!;
@@ -264,7 +265,7 @@ export async function placeVoiceCall(
     emit('completed');
 
     // Track the call as an engagement event
-    trackVoiceEvent(resultId, '', 'voice_call_placed', { callId: callResult.callId || '' });
+    trackVoiceEvent(resultId, companyUrl || '', 'voice_call_placed', { callId: callResult.callId || '' });
 
     console.log('[Voice] Call placed:', {
       resultId,
@@ -292,7 +293,7 @@ export async function placeVoiceCall(
           callResult.callSuccessful = transcriptData.successful;
           voiceCallStore.set(resultId, callResult);
           logAgentDecision(resultId, `Transcript captured: ${transcriptData.transcript.length} messages, ${transcriptData.duration}s`);
-          trackVoiceEvent(resultId, '', 'voicemail_delivered', {
+          trackVoiceEvent(resultId, companyUrl || '', 'voicemail_delivered', {
             duration: String(transcriptData.duration),
             messages: String(transcriptData.transcript.length),
           });

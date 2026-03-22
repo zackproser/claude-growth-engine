@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { resultId, script, companyName, productContext, reasoning } = body;
+    const { resultId, script, companyName, companyUrl, productContext, reasoning } = body;
 
     if (!resultId || !script) {
       return NextResponse.json({ error: 'Missing resultId or script' }, { status: 400 });
@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
       voicemailReasoning,
       undefined,
       companyName || 'the prospect',
-      productContext || ''
+      productContext || '',
+      companyUrl || ''
     );
 
     logAgentDecision(resultId, `Call ${callResult.status}: ${callResult.callId || 'no call ID'}`);
