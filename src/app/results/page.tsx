@@ -349,11 +349,32 @@ function ResultsContent() {
       return;
     }
 
-    // Initial load
+    // Initial load — try API first, fall back to localStorage
     fetch(`/api/analyze?id=${id}`)
       .then(res => res.json())
-      .then(data => { if (data.error) setError(data.error); else setResult(data); })
-      .catch(err => setError(err.message))
+      .then(data => {
+        if (data.error) {
+          // API doesn't have it (server restarted) — try localStorage
+          const stored = localStorage.getItem('latest-result');
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              if (parsed.id === id) { setResult(parsed); return; }
+            } catch {}
+          }
+          setError(data.error);
+        } else {
+          setResult(data);
+        }
+      })
+      .catch(() => {
+        const stored = localStorage.getItem('latest-result');
+        if (stored) {
+          try { setResult(JSON.parse(stored)); } catch { setError('Failed to load'); }
+        } else {
+          setError('Failed to load');
+        }
+      })
       .finally(() => setLoading(false));
 
     // Poll for artifact updates (Phase 2 fills them in)
