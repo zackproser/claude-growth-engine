@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
-import type { AnalysisResult, OutreachArtifact } from '@/lib/types';
+import type { AnalysisResult, OutreachArtifact, VoiceCallResult } from '@/lib/types';
 
 function ArtifactCard({ artifact, resultId, onMarkSent }: {
   artifact: OutreachArtifact;
@@ -15,10 +15,11 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
   const [expanded, setExpanded] = useState(false);
 
   const config: Record<string, { icon: string; label: string; color: string; actionLabel?: string }> = {
-    'cold-email': { icon: '📧', label: 'Cold Email', color: 'border-primary/20 bg-primary/5', actionLabel: '✉️ Mark as Sent' },
-    'demo-page': { icon: '🎯', label: 'Demo Page', color: 'border-yellow-200 bg-yellow-50' },
-    'value-prop': { icon: '📊', label: 'Value Proposition', color: 'border-blue-200 bg-blue-50' },
-    'linkedin-message': { icon: '💼', label: 'LinkedIn Message', color: 'border-purple-200 bg-purple-50', actionLabel: '✉️ Mark as Sent' },
+    'cold-email': { icon: '📧', label: 'Cold Email', color: 'border-anthropic-border bg-white', actionLabel: '✉️ Mark as Sent' },
+    'demo-page': { icon: '🎯', label: 'Demo Page', color: 'border-anthropic-border bg-white' },
+    'value-prop': { icon: '📊', label: 'Value Proposition', color: 'border-anthropic-border bg-white' },
+    'linkedin-message': { icon: '💼', label: 'LinkedIn Message', color: 'border-anthropic-border bg-white', actionLabel: '✉️ Mark as Sent' },
+    'voicemail-script': { icon: '📞', label: 'Voicemail Script', color: 'border-anthropic-border bg-white' },
   };
 
   const c = config[artifact.type] || { icon: '📄', label: artifact.title, color: 'border-anthropic-border bg-white' };
@@ -91,6 +92,84 @@ function ArtifactCard({ artifact, resultId, onMarkSent }: {
         <div className="mt-3 bg-cream rounded-lg p-4 text-sm text-text-muted prose prose-sm max-w-none">
           <ReactMarkdown>{artifact.content}</ReactMarkdown>
         </div>
+      )}
+    </div>
+  );
+}
+
+function VoiceCallStatusCard({ resultId }: { resultId: string }) {
+  const [callData, setCallData] = useState<{ call: VoiceCallResult | null; agentDecisions: string[] } | null>(null);
+
+  useEffect(() => {
+    const fetchVoice = () => {
+      fetch(`/api/voice?id=${resultId}`)
+        .then(res => res.json())
+        .then(data => setCallData(data))
+        .catch(() => {});
+    };
+    fetchVoice();
+    const interval = setInterval(fetchVoice, 5000);
+    return () => clearInterval(interval);
+  }, [resultId]);
+
+  if (!callData?.call) return null;
+
+  const { call, agentDecisions } = callData;
+  const statusConfig: Record<string, { label: string; color: string; pulse?: boolean }> = {
+    generating_script: { label: 'Generating voicemail...', color: 'text-yellow-600', pulse: true },
+    creating_agent: { label: 'Setting up voice agent...', color: 'text-yellow-600', pulse: true },
+    placing_call: { label: 'Placing call...', color: 'text-primary', pulse: true },
+    ringing: { label: 'Ringing...', color: 'text-primary', pulse: true },
+    in_progress: { label: 'Call in progress', color: 'text-green-600', pulse: true },
+    completed: { label: 'Voicemail delivered', color: 'text-green-600' },
+    failed: { label: 'Call failed', color: 'text-red-600' },
+    no_answer: { label: 'No answer', color: 'text-gray-600' },
+  };
+  const status = statusConfig[call.status] || { label: call.status, color: 'text-gray-600' };
+
+  return (
+    <div className="bg-white border border-anthropic-border rounded-xl p-5 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">📞</span>
+          <div>
+            <h3 className="text-base font-semibold text-text-dark">Outbound Voice Call</h3>
+            <div className="flex items-center gap-2">
+              {status.pulse && <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+              <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
+            </div>
+          </div>
+        </div>
+        <span className="text-xs text-text-muted font-mono">{call.phoneNumberCalled}</span>
+      </div>
+
+      {/* Script preview */}
+      <div className="bg-cream rounded-lg p-3 mb-3 border border-anthropic-border">
+        <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Script</p>
+        <p className="text-sm text-text-dark leading-relaxed">{call.script}</p>
+      </div>
+
+      {/* Agent reasoning */}
+      {call.agentReasoning && (
+        <div className="bg-light-alt rounded-lg p-3 mb-3 border border-anthropic-border">
+          <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Why this approach</p>
+          <p className="text-sm text-text-dark leading-relaxed">{call.agentReasoning}</p>
+        </div>
+      )}
+
+      {call.error && (
+        <p className="text-xs text-red-600 mt-2">Error: {call.error}</p>
+      )}
+
+      {agentDecisions.length > 0 && (
+        <details className="mt-3">
+          <summary className="text-xs text-text-muted cursor-pointer hover:text-text-dark">Agent decision log ({agentDecisions.length} entries)</summary>
+          <div className="mt-2 space-y-1">
+            {agentDecisions.map((d, i) => (
+              <p key={i} className="text-xs text-text-muted font-mono">{d}</p>
+            ))}
+          </div>
+        </details>
       )}
     </div>
   );
@@ -181,22 +260,22 @@ function ResultsContent() {
               <span className="text-xs bg-light-alt text-text-muted px-2.5 py-1 rounded-full">{result.company.industry}</span>
             )}
             {result.company.techStack?.map((tech, i) => (
-              <span key={i} className="text-xs bg-blue-900/20 text-blue-600 px-2.5 py-1 rounded-full">{tech}</span>
+              <span key={i} className="text-xs bg-text-dark/5 text-text-dark px-2.5 py-1 rounded-full border border-anthropic-border">{tech}</span>
             ))}
           </div>
 
           {/* Pain points */}
           {result.company.painPoints.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-4">
+            <div className="bg-white border border-anthropic-border rounded-xl px-5 py-4 mb-4">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">🩸</span>
-                <p className="text-sm text-red-700 font-bold uppercase tracking-wide">Identified Pain Points</p>
+                <span className="text-lg">🎯</span>
+                <p className="text-sm text-primary font-bold uppercase tracking-wide">Identified Pain Points</p>
               </div>
               <div className="space-y-2">
                 {result.company.painPoints.map((pp, i) => (
                   <div key={i} className="flex items-start gap-2.5">
-                    <span className="text-red-400 mt-0.5 text-xs">●</span>
-                    <p className="text-sm text-red-800 leading-relaxed">{pp}</p>
+                    <span className="text-primary mt-0.5 text-xs">●</span>
+                    <p className="text-sm text-text-dark leading-relaxed">{pp}</p>
                   </div>
                 ))}
               </div>
@@ -216,6 +295,9 @@ function ResultsContent() {
             />
           ))}
         </div>
+
+        {/* Voice call status */}
+        <VoiceCallStatusCard resultId={result.id} />
 
         {/* Actions */}
         <div className="flex flex-wrap gap-3 justify-center pt-6 border-t border-anthropic-border">

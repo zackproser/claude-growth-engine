@@ -40,6 +40,7 @@ Go to ${targetUrl} and research everything you can about them:
 - What are their biggest pain points that the founder's API could solve?
 - Try to find their logo URL from the site's og:image meta tag, apple-touch-icon, or /favicon.ico. If not immediately obvious, use their favicon or set logoUrl to null. Do NOT spend multiple searches looking for a logo — move on quickly.
 - Look for any indicators of their current technical challenges
+- If you find a phone number on their website (contact page, footer, etc.), include it as "phoneNumber" in the company object
 
 ### Step 2: Generate outreach artifacts
 Based on your research, create the following. Each must be deeply personalized to the target company — reference their specific products, pain points, and how specific API endpoints solve their problems.
@@ -55,7 +56,8 @@ Return your findings as a JSON object with this exact structure:
     "description": "What they do in 1-2 sentences",
     "painPoints": ["pain point 1", "pain point 2", "pain point 3"],
     "techStack": ["tech1", "tech2"],
-    "industry": "Their industry"
+    "industry": "Their industry",
+    "phoneNumber": "+1234567890 or null if not found"
   },
   "artifacts": [
     {
@@ -77,8 +79,14 @@ Return your findings as a JSON object with this exact structure:
       "type": "linkedin-message",
       "title": "LinkedIn Message",
       "content": "A short LinkedIn connection message. Under 3 sentences. Reference something specific about their company."
+    },
+    {
+      "type": "voicemail-script",
+      "title": "Voicemail Script",
+      "content": "A natural, conversational voicemail script (15-25 seconds when spoken). Written as if a founder is personally calling. Reference the company by name, mention ONE specific pain point you found, and briefly say how the API helps. End with your name and a soft CTA like 'I'd love to show you — check your email for a quick demo link.' Do NOT sound salesy or robotic. No 'Hi, my name is...' opener — jump straight in like you know them."
     }
-  ]
+  ],
+  "voicemailReasoning": "2-3 sentences explaining: which pain point you chose to lead with in the voicemail and why, what tone you're going for, and why this approach will resonate with this specific company."
 }
 \`\`\`
 
@@ -94,7 +102,7 @@ export async function runGrowthAgent(
   let resultText = '';
 
   const emit = onProgress || (() => {});
-  emit({ step: 'Initializing Claude Agent SDK...' });
+  emit({ step: 'Spinning up Claude agent and configuring tools...' });
 
   // Build MCP servers config — include google-sheets if configured
   const sheetId = process.env.GOOGLE_SHEET_ID;
@@ -121,9 +129,35 @@ export async function runGrowthAgent(
     if (!seenPhases.has(step)) {
       seenPhases.add(step);
       emit({ step, detail });
+      lastPhaseTime = Date.now();
     }
   };
 
+  // Time-based fallback: if no phase emitted in 15s, show a "still working" message
+  let lastPhaseTime = Date.now();
+  const idleMessages = [
+    'Deep-diving into their tech stack...',
+    'Crafting personalized hooks...',
+    'Analyzing competitive positioning...',
+    'Cross-referencing API capabilities...',
+    'Evaluating market fit signals...',
+    'Studying their product landscape...',
+  ];
+  let idleMessageIndex = 0;
+  const idleInterval = setInterval(() => {
+    try {
+      if (Date.now() - lastPhaseTime >= 15_000) {
+        const msg = idleMessages[idleMessageIndex % idleMessages.length];
+        idleMessageIndex++;
+        emit({ step: msg });
+        lastPhaseTime = Date.now();
+      }
+    } catch {
+      clearInterval(idleInterval);
+    }
+  }, 5_000);
+
+  try {
   for await (const message of query({
     prompt: buildAgentPrompt(spec, targetUrl, sheetId),
     options: {
@@ -153,14 +187,35 @@ export async function runGrowthAgent(
           }
           if (block.type === 'text' && typeof block.text === 'string') {
             const text = block.text as string;
+            const lower = text.toLowerCase();
             // Detect phase from agent's text output
             if (text.includes('"company"') && text.includes('"artifacts"')) {
-              emitOnce('generating', 'Assembling outreach suite...');
+              emitOnce('assembling', 'Assembling outreach suite...');
               resultText = text;
-            } else if (text.includes('pain') || text.includes('challenge')) {
-              emitOnce('analyzing', 'Analyzing pain points and use cases...');
-            } else if (text.includes('logo') || text.includes('brand')) {
+            } else if (lower.includes('logo') || lower.includes('brand')) {
               emitOnce('branding', 'Finding company branding...');
+            }
+            // Granular phase detection from agent reasoning
+            if (lower.includes('research') || lower.includes('found') || lower.includes('company') || lower.includes('website')) {
+              emitOnce('company_profile', 'Analyzing company profile...');
+            }
+            if (lower.includes('pain') || lower.includes('challenge') || lower.includes('problem') || lower.includes('struggle')) {
+              emitOnce('pain_points', 'Identifying pain points...');
+            }
+            if (lower.includes('email') || lower.includes('subject line') || lower.includes('cold email')) {
+              emitOnce('cold_email', 'Crafting cold email...');
+            }
+            if (lower.includes('value prop') || lower.includes('endpoint') || lower.includes('api') || lower.includes('mapping')) {
+              emitOnce('value_props', 'Mapping API endpoints to pain points...');
+            }
+            if (lower.includes('demo') || lower.includes('story block') || lower.includes('narrative')) {
+              emitOnce('demo_page', 'Building personalized demo page...');
+            }
+            if (lower.includes('linkedin') || lower.includes('connection')) {
+              emitOnce('linkedin', 'Writing LinkedIn message...');
+            }
+            if (lower.includes('voicemail') || lower.includes('voice') || lower.includes('script') || lower.includes('call')) {
+              emitOnce('voicemail', 'Writing voicemail script...');
             }
           }
         }
@@ -193,6 +248,9 @@ export async function runGrowthAgent(
       }
     }
   }
+  } finally {
+    clearInterval(idleInterval);
+  }
 
   if (!resultText) {
     throw new Error('Agent did not return a result');
@@ -207,7 +265,7 @@ export async function runGrowthAgent(
     jsonStr = jsonMatch[0];
   }
 
-  let agentResult: { company: CompanyResearch; artifacts: OutreachArtifact[] };
+  let agentResult: { company: CompanyResearch; artifacts: OutreachArtifact[]; voicemailReasoning?: string };
   try {
     agentResult = JSON.parse(jsonStr);
   } catch {
@@ -223,5 +281,6 @@ export async function runGrowthAgent(
     company: agentResult.company,
     artifacts: agentResult.artifacts,
     demoPageUrl: `/demo/${id}`,
+    voicemailReasoning: agentResult.voicemailReasoning,
   };
 }

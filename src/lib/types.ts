@@ -24,10 +24,11 @@ export interface CompanyResearch {
   painPoints: string[];
   techStack?: string[];
   industry?: string;
+  phoneNumber?: string;
 }
 
 export interface OutreachArtifact {
-  type: 'cold-email' | 'demo-page' | 'value-prop' | 'linkedin-message';
+  type: 'cold-email' | 'demo-page' | 'value-prop' | 'linkedin-message' | 'voicemail-script';
   title: string;
   content: string;
   sentAt?: string;
@@ -41,12 +42,13 @@ export interface AnalysisResult {
   company: CompanyResearch;
   artifacts: OutreachArtifact[];
   demoPageUrl: string;
+  voicemailReasoning?: string;
 }
 
 export interface TrackingEvent {
   resultId: string;
   companyUrl: string;
-  eventType: 'page_view' | 'email_sent' | 'email_opened' | 'link_clicked' | 'demo_viewed' | 'feedback_submitted' | 'api_playground' | 'time_on_page';
+  eventType: 'page_view' | 'email_sent' | 'email_opened' | 'link_clicked' | 'demo_viewed' | 'feedback_submitted' | 'api_playground' | 'time_on_page' | 'lang_selected' | 'voice_call_placed' | 'voicemail_delivered' | 'voicemail_listened';
   metadata?: Record<string, string>;
   timestamp: string;
 }
@@ -60,4 +62,23 @@ export interface LeadScore {
   nextAction: string;
   nextActionDate: string;
   lastEngagement: string;
+}
+
+export type VoiceCallStatus = 'generating_script' | 'creating_agent' | 'placing_call' | 'ringing' | 'in_progress' | 'completed' | 'failed' | 'no_answer';
+
+export interface VoiceCallResult {
+  status: VoiceCallStatus;
+  script: string;
+  agentReasoning: string;
+  callId?: string;
+  conversationId?: string;
+  elevenlabsAgentId?: string;
+  phoneNumberCalled: string;
+  startedAt: string;
+  completedAt?: string;
+  error?: string;
+}
+
+export interface AnalysisResultWithVoice extends AnalysisResult {
+  voiceCall?: VoiceCallResult;
 }
