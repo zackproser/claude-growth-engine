@@ -33,34 +33,9 @@ Give it a prospect URL and an OpenAPI spec. It handles the rest.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│   Prospect URL ──► Claude Agent SDK                             │
-│                    (research + analysis)                         │
-│                         │                                       │
-│                         ▼                                       │
-│                    Outreach Suite                                │
-│                    ├── Cold Email                                │
-│                    ├── Branded Demo Page                         │
-│                    ├── Value Proposition                         │
-│                    ├── LinkedIn Message                          │
-│                    └── Voicemail Script                          │
-│                         │                                       │
-│                         ▼                                       │
-│                    ElevenLabs Voice Call                         │
-│                    (cloned founder voice + voicemail detection)  │
-│                         │                                       │
-│                         ▼                                       │
-│                    Post-Call Analysis                            │
-│                    (transcript + follow-up insights)             │
-│                         │                                       │
-│                         ▼                                       │
-│                    Lead Scoring Dashboard                        │
-│                    (engagement tracking via Google Sheets MCP)   │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+<div align="center">
+<img src="public/architecture-diagram.png" alt="Architecture: Prospect URL → Claude Agent SDK → Outreach Suite → ElevenLabs Voice Call → Lead Intelligence" width="800" />
+</div>
 
 ---
 
