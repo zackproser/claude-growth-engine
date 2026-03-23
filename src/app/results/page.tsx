@@ -269,11 +269,26 @@ function VoiceCallStatusCard({ resultId, result }: { resultId: string; result?: 
         </div>
       )}
 
-      {/* Fetching transcript indicator */}
+      {/* Fetching transcript indicator + retry */}
       {call.status === 'completed' && !call.transcript && (
-        <div className="mb-3 flex items-center gap-2 text-xs text-text-muted">
+        <div className="mb-3 flex items-center gap-3 text-xs text-text-muted">
           <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           Fetching call transcript...
+          <button
+            onClick={async () => {
+              if (!call.conversationId) return;
+              try {
+                await fetch('/api/voice/transcript', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ resultId, conversationId: call.conversationId, companyName: result?.company?.name }),
+                });
+              } catch {}
+            }}
+            className="text-xs px-2 py-1 rounded bg-text-dark hover:bg-text-dark/90 text-white font-medium"
+          >
+            Retry
+          </button>
         </div>
       )}
 
