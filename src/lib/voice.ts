@@ -110,8 +110,8 @@ async function fetchCallTranscript(conversationId: string): Promise<{
   successful: boolean;
 } | null> {
   const apiKey = process.env.ELEVENLABS_API_KEY!;
-  const maxRetries = 12;
-  const retryDelay = 5_000; // 5 seconds between retries
+  const maxRetries = 30;
+  const retryDelay = 6_000; // 6 seconds between retries — polls for 3 minutes total
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
