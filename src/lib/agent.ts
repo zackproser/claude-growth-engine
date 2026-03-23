@@ -249,8 +249,8 @@ Return ONLY the JSON array.`,
     },
     {
       type: 'voicemail-script',
-      title: 'Voicemail Script',
-      prompt: `Write a natural voicemail script (15-25 seconds when spoken) as if a founder is personally calling ${company.name}.
+      title: 'Call Script',
+      prompt: `Write a natural sales call opening pitch (15-25 seconds when spoken) as if a founder is personally calling ${company.name}.
 
 ${companyContext}
 

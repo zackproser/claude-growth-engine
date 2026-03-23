@@ -215,7 +215,7 @@ function VoiceCallStatusCard({ resultId, result }: { resultId: string; result?: 
 
   const { call, agentDecisions } = callData;
   const statusConfig: Record<string, { label: string; color: string; pulse?: boolean }> = {
-    generating_script: { label: 'Generating voicemail...', color: 'text-yellow-600', pulse: true },
+    generating_script: { label: 'Preparing call...', color: 'text-yellow-600', pulse: true },
     creating_agent: { label: 'Setting up voice agent...', color: 'text-yellow-600', pulse: true },
     placing_call: { label: 'Placing call...', color: 'text-primary', pulse: true },
     ringing: { label: 'Ringing...', color: 'text-primary', pulse: true },

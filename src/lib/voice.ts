@@ -117,7 +117,7 @@ async function fetchCallTranscript(conversationId: string): Promise<{
     try {
       const res = await fetch(
         `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
-        { headers: { 'xi-api-key': apiKey } }
+        { headers: { 'xi-api-key': apiKey }, signal: AbortSignal.timeout(10_000) }
       );
 
       if (!res.ok) {
@@ -174,6 +174,7 @@ async function generateCallInsights(
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: AbortSignal.timeout(30_000),
       headers: {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
