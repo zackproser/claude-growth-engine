@@ -16,6 +16,10 @@
 [![Tests](https://img.shields.io/badge/Tests-65%20passing-2ea44f?style=for-the-badge&logo=jest&logoColor=white)](#testing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-E8C547?style=for-the-badge)](LICENSE)
 
+<br />
+
+<img src="img/growth-engine-flow.svg" alt="Growth Engine Flow" width="720" />
+
 </div>
 
 ---
