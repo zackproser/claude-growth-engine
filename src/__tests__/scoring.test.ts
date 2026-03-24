@@ -86,7 +86,7 @@ describe('Lead Scoring', () => {
     const events = [makeEvent({ eventType: 'voicemail_listened' })];
     const scores = computeLeadScores(events);
     expect(scores[0].score).toBe(35);
-    expect(scores[0].signals).toContain('Listened to voicemail');
+    expect(scores[0].signals).toContain('Spoke on phone');
   });
 
   test('voice signals appear in signal summary', () => {
@@ -95,8 +95,8 @@ describe('Lead Scoring', () => {
       makeEvent({ eventType: 'voicemail_delivered' }),
     ];
     const scores = computeLeadScores(events);
-    expect(scores[0].signals).toContain('Voicemail sent');
-    expect(scores[0].signals).toContain('Voicemail delivered');
+    expect(scores[0].signals).toContain('Call placed');
+    expect(scores[0].signals).toContain('Call completed');
   });
 
   test('next action is immediate for hot leads', () => {
@@ -115,22 +115,22 @@ describe('Lead Scoring', () => {
   });
 
   describe('voice event signal summaries', () => {
-    test('voice_call_placed produces "Voicemail sent" signal', () => {
+    test('voice_call_placed produces "Call placed" signal', () => {
       const events = [makeEvent({ eventType: 'voice_call_placed' })];
       const scores = computeLeadScores(events);
-      expect(scores[0].signals).toContain('Voicemail sent');
+      expect(scores[0].signals).toContain('Call placed');
     });
 
-    test('voicemail_delivered produces "Voicemail delivered" signal', () => {
+    test('voicemail_delivered produces "Call completed" signal', () => {
       const events = [makeEvent({ eventType: 'voicemail_delivered' })];
       const scores = computeLeadScores(events);
-      expect(scores[0].signals).toContain('Voicemail delivered');
+      expect(scores[0].signals).toContain('Call completed');
     });
 
-    test('voicemail_listened produces "Listened to voicemail" signal', () => {
+    test('voicemail_listened produces "Spoke on phone" signal', () => {
       const events = [makeEvent({ eventType: 'voicemail_listened' })];
       const scores = computeLeadScores(events);
-      expect(scores[0].signals).toContain('Listened to voicemail');
+      expect(scores[0].signals).toContain('Spoke on phone');
     });
 
     test('voice_call_placed has weight 10', () => {
@@ -165,8 +165,8 @@ describe('Lead Scoring', () => {
       // demo_viewed(10) + voice_call_placed(10) + voicemail_delivered(20) + api_playground(20) = 60
       expect(scores[0].score).toBe(60);
       expect(scores[0].temperature).toBe('warm');
-      expect(scores[0].signals).toContain('Voicemail sent');
-      expect(scores[0].signals).toContain('Voicemail delivered');
+      expect(scores[0].signals).toContain('Call placed');
+      expect(scores[0].signals).toContain('Call completed');
     });
 
     test('voice + web pushes lead to hot when combined', () => {
@@ -179,7 +179,7 @@ describe('Lead Scoring', () => {
       // voicemail_listened(35) + feedback_submitted(30) + lang_selected(25) = 90
       expect(scores[0].score).toBe(90);
       expect(scores[0].temperature).toBe('hot');
-      expect(scores[0].signals).toContain('Listened to voicemail');
+      expect(scores[0].signals).toContain('Spoke on phone');
       expect(scores[0].signals).toContain('Uses Python');
     });
 

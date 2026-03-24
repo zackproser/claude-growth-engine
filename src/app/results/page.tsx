@@ -51,7 +51,7 @@ function ArtifactCard({ artifact, resultId, result, onMarkSent }: {
     'demo-page': { icon: '🎯', label: 'Demo Page', color: 'border-anthropic-border bg-white' },
     'value-prop': { icon: '📊', label: 'Value Proposition', color: 'border-anthropic-border bg-white' },
     'linkedin-message': { icon: '💼', label: 'LinkedIn Message', color: 'border-anthropic-border bg-white', actionLabel: '✉️ Mark as Sent' },
-    'voicemail-script': { icon: '📞', label: 'Voicemail Script', color: 'border-anthropic-border bg-white' },
+    'voicemail-script': { icon: '📞', label: 'Call Script', color: 'border-anthropic-border bg-white' },
   };
 
   const c = config[artifact.type] || { icon: '📄', label: artifact.title, color: 'border-anthropic-border bg-white' };
@@ -215,7 +215,7 @@ function VoiceCallStatusCard({ resultId, result }: { resultId: string; result?: 
 
   const { call, agentDecisions } = callData;
   const statusConfig: Record<string, { label: string; color: string; pulse?: boolean }> = {
-    generating_script: { label: 'Generating voicemail...', color: 'text-yellow-600', pulse: true },
+    generating_script: { label: 'Preparing call...', color: 'text-yellow-600', pulse: true },
     creating_agent: { label: 'Setting up voice agent...', color: 'text-yellow-600', pulse: true },
     placing_call: { label: 'Placing call...', color: 'text-primary', pulse: true },
     ringing: { label: 'Ringing...', color: 'text-primary', pulse: true },
@@ -269,11 +269,26 @@ function VoiceCallStatusCard({ resultId, result }: { resultId: string; result?: 
         </div>
       )}
 
-      {/* Fetching transcript indicator */}
+      {/* Fetching transcript indicator + retry */}
       {call.status === 'completed' && !call.transcript && (
-        <div className="mb-3 flex items-center gap-2 text-xs text-text-muted">
+        <div className="mb-3 flex items-center gap-3 text-xs text-text-muted">
           <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           Fetching call transcript...
+          <button
+            onClick={async () => {
+              if (!call.conversationId) return;
+              try {
+                await fetch('/api/voice/transcript', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ resultId, conversationId: call.conversationId, companyName: result?.company?.name }),
+                });
+              } catch {}
+            }}
+            className="text-xs px-2 py-1 rounded bg-text-dark hover:bg-text-dark/90 text-white font-medium"
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -499,7 +514,7 @@ function ResultsContent() {
           </h2>
           {(() => {
             const allTypes = ['cold-email', 'value-prop', 'demo-page', 'linkedin-message', 'voicemail-script'] as const;
-            const typeLabels: Record<string, string> = { 'cold-email': 'Cold Email', 'value-prop': 'Value Proposition', 'demo-page': 'Demo Page', 'linkedin-message': 'LinkedIn Message', 'voicemail-script': 'Voicemail Script' };
+            const typeLabels: Record<string, string> = { 'cold-email': 'Cold Email', 'value-prop': 'Value Proposition', 'demo-page': 'Demo Page', 'linkedin-message': 'LinkedIn Message', 'voicemail-script': 'Call Script' };
             const arrivedTypes = new Set(result.artifacts.map(a => a.type));
 
             return allTypes.map((type) => {

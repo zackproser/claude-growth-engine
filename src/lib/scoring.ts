@@ -90,9 +90,9 @@ export function computeLeadScores(events: TrackingEvent[]): LeadScore[] {
       if (type === 'demo_viewed') signals.unshift(`${count} demo view${count > 1 ? 's' : ''}`);
       else if (type === 'api_playground') signals.push(`${count} API interaction${count > 1 ? 's' : ''}`);
       else if (type === 'time_on_page') signals.push('Spent 2+ min on page');
-      else if (type === 'voice_call_placed') signals.push('Voicemail sent');
-      else if (type === 'voicemail_delivered') signals.push('Voicemail delivered');
-      else if (type === 'voicemail_listened') signals.push('Listened to voicemail');
+      else if (type === 'voice_call_placed') signals.push('Call placed');
+      else if (type === 'voicemail_delivered') signals.push('Call completed');
+      else if (type === 'voicemail_listened') signals.push('Spoke on phone');
     }
 
     // Cap at 100

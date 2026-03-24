@@ -280,9 +280,9 @@ export default function TrackingPage() {
                     <VoiceStatusBadge status={call.status} />
                   </div>
 
-                  {/* Voicemail script */}
+                  {/* Call script */}
                   <div className="bg-cream rounded-lg p-3 mb-3">
-                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Voicemail Script</p>
+                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Call Script</p>
                     <p className="text-sm text-text-dark leading-relaxed">{call.script}</p>
                   </div>
 
@@ -445,8 +445,8 @@ function EventBadge({ type }: { type: string }) {
     link_clicked: { label: '🔗 Link Click', color: 'bg-gray-50 text-gray-600 border border-gray-200' },
     page_view: { label: '📄 Page View', color: 'bg-gray-50 text-gray-600 border border-gray-200' },
     voice_call_placed: { label: '📞 Call Placed', color: 'bg-primary/10 text-primary border border-primary/20' },
-    voicemail_delivered: { label: '📬 VM Delivered', color: 'bg-green-50 text-green-700 border border-green-200' },
-    voicemail_listened: { label: '🎧 VM Listened', color: 'bg-green-50 text-green-700 border border-green-200' },
+    voicemail_delivered: { label: '📬 Call Completed', color: 'bg-green-50 text-green-700 border border-green-200' },
+    voicemail_listened: { label: '🎧 Spoke on Phone', color: 'bg-green-50 text-green-700 border border-green-200' },
   };
 
   const c = config[type] || { label: type, color: 'bg-neutral-500/20 text-neutral-400' };
