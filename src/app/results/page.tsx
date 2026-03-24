@@ -51,7 +51,7 @@ function ArtifactCard({ artifact, resultId, result, onMarkSent }: {
     'demo-page': { icon: '🎯', label: 'Demo Page', color: 'border-anthropic-border bg-white' },
     'value-prop': { icon: '📊', label: 'Value Proposition', color: 'border-anthropic-border bg-white' },
     'linkedin-message': { icon: '💼', label: 'LinkedIn Message', color: 'border-anthropic-border bg-white', actionLabel: '✉️ Mark as Sent' },
-    'voicemail-script': { icon: '📞', label: 'Voicemail Script', color: 'border-anthropic-border bg-white' },
+    'voicemail-script': { icon: '📞', label: 'Call Script', color: 'border-anthropic-border bg-white' },
   };
 
   const c = config[artifact.type] || { icon: '📄', label: artifact.title, color: 'border-anthropic-border bg-white' };
@@ -514,7 +514,7 @@ function ResultsContent() {
           </h2>
           {(() => {
             const allTypes = ['cold-email', 'value-prop', 'demo-page', 'linkedin-message', 'voicemail-script'] as const;
-            const typeLabels: Record<string, string> = { 'cold-email': 'Cold Email', 'value-prop': 'Value Proposition', 'demo-page': 'Demo Page', 'linkedin-message': 'LinkedIn Message', 'voicemail-script': 'Voicemail Script' };
+            const typeLabels: Record<string, string> = { 'cold-email': 'Cold Email', 'value-prop': 'Value Proposition', 'demo-page': 'Demo Page', 'linkedin-message': 'LinkedIn Message', 'voicemail-script': 'Call Script' };
             const arrivedTypes = new Set(result.artifacts.map(a => a.type));
 
             return allTypes.map((type) => {
