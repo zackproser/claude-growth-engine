@@ -20,13 +20,21 @@ export default function IntroPage() {
         {/* Content */}
         <div className="flex-1">
           <h1 className="text-5xl font-bold text-white mb-2 tracking-tight">Zack Proser</h1>
-          <p className="text-2xl text-[#D97757] font-medium mb-12">Staff Developer &amp; AI Engineer</p>
+          <p className="text-2xl text-[#D97757] font-medium mb-12">Staff AI Engineer &amp; Open-Source Builder</p>
 
           <div className="space-y-8">
             <div className="flex items-start gap-4">
               <span className="w-3 h-3 rounded-full bg-[#D97757] mt-2 flex-shrink-0" />
               <p className="text-xl text-[#ccc] leading-relaxed">
                 <span className="text-white font-semibold">14+ years</span> as a full-stack developer, currently on the Applied AI team at WorkOS
+              </p>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <span className="w-3 h-3 rounded-full bg-[#D97757] mt-2 flex-shrink-0" />
+              <p className="text-xl text-[#ccc] leading-relaxed">
+                <span className="text-white font-semibold">Speaker &amp; workshop leader</span> — designed and led an Anthropic cowork workshop on cold prospecting with Claude Code, alongside Lydia from the Claude Code team{' '}
+                <a href="https://zackproser.com/speaking" target="_blank" rel="noopener noreferrer" className="text-[#D97757] underline hover:text-white">My Speaking Page →</a>
               </p>
             </div>
 
