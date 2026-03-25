@@ -33,7 +33,8 @@ export default function IntroPage() {
             <div className="flex items-start gap-4">
               <span className="w-3 h-3 rounded-full bg-[#D97757] mt-2 flex-shrink-0" />
               <p className="text-xl text-[#ccc] leading-relaxed">
-                <span className="text-white font-semibold">Speaker &amp; workshop leader</span> — designed and led an Anthropic cowork workshop on cold prospecting with Claude Code, alongside Lydia from the Claude Code team
+                <span className="text-white font-semibold">Speaker &amp; workshop leader</span> — designed and led an Anthropic cowork workshop on cold prospecting with Claude Code, alongside Lydia from the Claude Code team{' '}
+                <a href="https://zackproser.com/speaking" target="_blank" rel="noopener noreferrer" className="text-[#D97757] underline hover:text-white">My Speaking Page →</a>
               </p>
             </div>
 
@@ -52,24 +53,13 @@ export default function IntroPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 mt-14">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-3 px-8 py-4 bg-[#D97757] hover:bg-[#c4684b] text-white text-lg font-semibold rounded-xl transition-colors"
-            >
-              Let&apos;s go
-              <span className="text-xl">→</span>
-            </Link>
-            <a
-              href="https://zackproser.com/speaking"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-4 border border-[#D97757] text-[#D97757] hover:bg-[#D97757] hover:text-white text-lg font-semibold rounded-xl transition-colors"
-            >
-              My Speaking Page
-              <span className="text-xl">→</span>
-            </a>
-          </div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-3 mt-14 px-8 py-4 bg-[#D97757] hover:bg-[#c4684b] text-white text-lg font-semibold rounded-xl transition-colors"
+          >
+            Let&apos;s go
+            <span className="text-xl">→</span>
+          </Link>
         </div>
       </div>
 
