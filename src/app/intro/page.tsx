@@ -33,6 +33,13 @@ export default function IntroPage() {
             <div className="flex items-start gap-4">
               <span className="w-3 h-3 rounded-full bg-[#D97757] mt-2 flex-shrink-0" />
               <p className="text-xl text-[#ccc] leading-relaxed">
+                <span className="text-white font-semibold">Speaker &amp; workshop leader</span> — designed and led an Anthropic cowork workshop on cold prospecting with Claude Code, alongside Lydia from the Claude Code team
+              </p>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <span className="w-3 h-3 rounded-full bg-[#D97757] mt-2 flex-shrink-0" />
+              <p className="text-xl text-[#ccc] leading-relaxed">
                 Built at <span className="text-white font-semibold">startups of every size</span> — from pre-seed to public company
               </p>
             </div>
