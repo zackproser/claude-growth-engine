@@ -20,7 +20,7 @@ export default function IntroPage() {
         {/* Content */}
         <div className="flex-1">
           <h1 className="text-5xl font-bold text-white mb-2 tracking-tight">Zack Proser</h1>
-          <p className="text-2xl text-[#D97757] font-medium mb-12">Staff Developer &amp; AI Engineer</p>
+          <p className="text-2xl text-[#D97757] font-medium mb-12">Staff Engineer &amp; AI Engineer</p>
 
           <div className="space-y-8">
             <div className="flex items-start gap-4">
