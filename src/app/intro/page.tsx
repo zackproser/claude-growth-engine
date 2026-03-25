@@ -52,13 +52,24 @@ export default function IntroPage() {
             </div>
           </div>
 
-          <Link
-            href="/"
-            className="inline-flex items-center gap-3 mt-14 px-8 py-4 bg-[#D97757] hover:bg-[#c4684b] text-white text-lg font-semibold rounded-xl transition-colors"
-          >
-            Let&apos;s go
-            <span className="text-xl">→</span>
-          </Link>
+          <div className="flex items-center gap-6 mt-14">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-[#D97757] hover:bg-[#c4684b] text-white text-lg font-semibold rounded-xl transition-colors"
+            >
+              Let&apos;s go
+              <span className="text-xl">→</span>
+            </Link>
+            <a
+              href="https://zackproser.com/speaking"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-4 border border-[#D97757] text-[#D97757] hover:bg-[#D97757] hover:text-white text-lg font-semibold rounded-xl transition-colors"
+            >
+              My Speaking Page
+              <span className="text-xl">→</span>
+            </a>
+          </div>
         </div>
       </div>
 
