@@ -12,7 +12,7 @@ export default function ScriptPage() {
           <h2 className="text-xl font-semibold text-[#D97757]">You&rsquo;re on the /intro page &mdash; avatar + bullet points</h2>
           <ul className="list-disc list-inside space-y-1.5 text-lg leading-relaxed">
             <li>Staff developer &amp; AI engineer, 14+ years full-stack</li>
-            <li><strong>Speaker &amp; workshop leader</strong> &mdash; designed and led an Anthropic cowork workshop on cold prospecting with Claude Code, with Lydia from the Claude Code team. See <em>zackproser.com/speaking</em></li>
+            <li><strong>Speaker &amp; workshop leader</strong> &mdash; designed and led an Anthropic cowork workshop on cold prospecting with Claude Code, with Lydia from the Claude Code team. See <a href="https://zackproser.com/speaking" target="_blank" rel="noopener noreferrer" className="underline text-[#D97757] hover:text-white">zackproser.com/speaking</a></li>
             <li>Currently on Applied AI team at WorkOS</li>
             <li>Building with Claude for 3 years &mdash; from the API to the Agent SDK</li>
             <li>From working at startups of every size &mdash; founders are pressed to show traction, catch early adopters, find PMF fast</li>
