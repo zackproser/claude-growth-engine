@@ -168,15 +168,7 @@ export default function ScriptPage() {
           </ul>
         </section>
 
-        {/* ── 14. TRANSITION TO Q&A ── */}
-        <section className="space-y-3 border-t border-[#333] pt-8">
-          <h2 className="text-xl font-semibold text-[#D97757]">Wrap up &mdash; transition to Q&amp;A</h2>
-          <ul className="list-disc list-inside space-y-1.5 text-lg leading-relaxed">
-            <li>&ldquo;That&rsquo;s all you need to get Claude Growth Engine powered by the Anthropic Agent SDK working for your business&rdquo;</li>
-          </ul>
-        </section>
-
-        {/* ── 15. FINAL OUTRO — THE VIDEO ── */}
+        {/* ── 14. FINAL OUTRO — THE VIDEO ── */}
         <section className="space-y-3 border-t border-[#333] pt-8">
           <h2 className="text-xl font-semibold text-[#D97757] text-2xl">DO NOT FORGET &mdash; mention the backup video</h2>
           <p className="text-lg text-white leading-relaxed italic">&ldquo;One last thing before we open it up &mdash;&rdquo;</p>
@@ -185,6 +177,14 @@ export default function ScriptPage() {
             <li>&ldquo;I like to come prepared. If there&rsquo;s ever API instability or something doesn&rsquo;t cooperate live, I want to make sure I can still show you exactly how everything works.&rdquo;</li>
             <li>&ldquo;Fortunately we didn&rsquo;t need it today &mdash; but I wanted you to know it&rsquo;s there.&rdquo;</li>
             <li><em>If something DID fail:</em> &ldquo;And actually, since we hit a hiccup with [X], let me pull up the recorded version so you can see exactly how that part works when everything&rsquo;s running clean.&rdquo;</li>
+          </ul>
+        </section>
+
+        {/* ── 15. TRANSITION TO Q&A ── */}
+        <section className="space-y-3 border-t border-[#333] pt-8">
+          <h2 className="text-xl font-semibold text-[#D97757]">Open it up to Q&amp;A</h2>
+          <ul className="list-disc list-inside space-y-1.5 text-lg leading-relaxed">
+            <li>&ldquo;That&rsquo;s all you need to get Claude Growth Engine powered by the Anthropic Agent SDK working for your business&rdquo;</li>
           </ul>
         </section>
 
